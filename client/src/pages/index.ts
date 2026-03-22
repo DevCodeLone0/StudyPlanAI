@@ -1,0 +1,7 @@
+export { DashboardPage } from './DashboardPage'
+export { PlannerPage } from './PlannerPage'
+export { TutorPage } from './TutorPage'
+export { ProfilePage } from './ProfilePage'
+export { LoginPage } from './LoginPage'
+export { RegisterPage } from './RegisterPage'
+export { LandingPage } from './LandingPage'

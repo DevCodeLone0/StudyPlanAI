@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTH
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  role          Role      @default(STUDENT)
+  
+  // Gamification
+  xp            Int       @default(0)
+  level         Int       @default(1)
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastActiveAt  DateTime?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  plans         Plan[]
+  badges        UserBadge[]
+  activities    Activity[]
+  refreshTokens RefreshToken[]
+  
+  @@map("users")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// STUDY PLAN
+// ============================================
+
+model Plan {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  goal        String     // Original study goal
+  duration    String     // e.g., "6 months"
+  dailyTime   String     // e.g., "2 hours"
+  
+  status      PlanStatus @default(DRAFT)
+  isActive    Boolean    @default(false)
+  version     Int        @default(1)
+  
+  // AI metadata
+  aiModel     String?
+  aiPrompt    String?
+  
+  // Timestamps
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  modules     Module[]
+  versions    PlanVersion[]
+  
+  @@map("plans")
+}
+
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+model PlanVersion {
+  id        String   @id @default(cuid())
+  version   Int
+  data      Json     // Full plan snapshot
+  createdAt DateTime @default(now())
+  
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  @@unique([planId, version])
+  @@map("plan_versions")
+}
+
+// ============================================
+// MODULES & MILESTONES
+// ============================================
+
+model Module {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  status      ModuleStatus @default(LOCKED)
+  
+  // AI metadata
+  estimatedDays Int?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  planId      String
+  plan        Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  milestones  Milestone[]
+  
+  @@map("modules")
+}
+
+enum ModuleStatus {
+  LOCKED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  xpReward    Int       @default(50)
+  dueDate     DateTime?
+  completedAt DateTime?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  resources   Resource[]
+  
+  @@map("milestones")
+}
+
+model Resource {
+  id        String       @id @default(cuid())
+  type      ResourceType
+  title     String
+  url       String?
+  content   String?      // For notes
+  createdAt DateTime     @default(now())
+  
+  milestoneId String
+  milestone   Milestone  @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  
+  @@map("resources")
+}
+
+enum ResourceType {
+  LINK
+  NOTE
+  FILE
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model Badge {
+  id          String @id @default(cuid())
+  code        String @unique // e.g., "FIRST_STEPS", "WEEK_WARRIOR"
+  name        String
+  description String
+  icon        String // emoji or icon name
+  requirement Json   // JSON describing unlock criteria
+  
+  users       UserBadge[]
+  
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  earnedAt DateTime @default(now())
+  
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  badgeId  String
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+// ============================================
+// ACTIVITY LOG
+// ============================================
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  metadata  Json?        // flexible data storage
+  createdAt DateTime     @default(now())
+  
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+  @@map("activities")
+}
+
+enum ActivityType {
+  MILESTONE_COMPLETED
+  PLAN_CREATED
+  PLAN_COMPLETED
+  STREAK_MAINTENED
+  STREAK_BROKEN
+  BADGE_EARNED
+  LEVEL_UP
+  PLAN_ADJUSTED
+}
