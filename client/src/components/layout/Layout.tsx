@@ -14,9 +14,11 @@ const navItems = [
   { path: '/app/profile', label: 'Profile', icon: '👤' },
 ]
 
-export function Layout({ requireAdmin }: LayoutProps) {
+export function Layout({ requireAdmin = false }: LayoutProps) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  
+  // TODO: Add admin-only navigation items when requireAdmin is true
   
   const handleLogout = () => {
     logout()
