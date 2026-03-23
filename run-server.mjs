@@ -1,8 +1,12 @@
-import { createRequire } from 'module'
-const require = createRequire(import.meta.url)
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
 
-// Find tsx
-const tsx = require('tsx')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
-// Run the server
-tsx.run('./src/index.ts')
+// Change to server directory
+process.chdir(join(__dirname, 'server'))
+
+// Find and run tsx
+const { run } = await import('tsx')
+await run('./src/index.ts')
