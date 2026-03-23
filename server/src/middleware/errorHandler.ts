@@ -39,11 +39,13 @@ export class ConflictError extends AppError {
   }
 }
 
+import type { Request, Response, NextFunction } from 'express'
+
 export function errorHandler(
   err: Error,
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) {
   console.error('Error:', err)
 

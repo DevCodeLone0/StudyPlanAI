@@ -78,10 +78,19 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
         title: goal,
         modules: [
           {
-            title: 'Getting Started',
-            description: 'Introduction to your study plan',
+            title: 'Introduction',
+            description: 'Getting started with your learning journey',
             milestones: [
-              { title: 'Set up your learning environment', description: 'Prepare all necessary materials', estimatedDuration: '1 day' },
+              { title: 'Set up goals', description: 'Define clear objectives', estimatedDuration: '1 day' },
+              { title: 'Create schedule', description: 'Plan your study time', estimatedDuration: '1 day' },
+            ],
+          },
+          {
+            title: 'Foundation',
+            description: 'Build your foundation knowledge',
+            milestones: [
+              { title: 'Core concepts', description: 'Learn the basics', estimatedDuration: '3 days' },
+              { title: 'Practice exercises', description: 'Apply what you learned', estimatedDuration: '2 days' },
             ],
           },
         ],
@@ -95,10 +104,13 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
   } catch (error: any) {
     console.error('AI generation error:', error.response?.data || error.message)
     
+    // Get goal from body in case of error
+    const { goal: errorGoal } = req.body
+    
     // Return a mock plan if API fails (for development)
     res.json({
       plan: {
-        title: goal || 'My Study Plan',
+        title: errorGoal || 'My Study Plan',
         modules: [
           {
             title: 'Introduction',
