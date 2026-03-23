@@ -14,11 +14,15 @@ const navItems = [
   { path: '/app/profile', label: 'Profile', icon: '👤' },
 ]
 
+const adminNavItems = [
+  { path: '/admin/users', label: 'Users', icon: '👥' },
+]
+
 export function Layout({ requireAdmin = false }: LayoutProps) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   
-  // TODO: Add admin-only navigation items when requireAdmin is true
+  const activeNavItems = requireAdmin ? [...navItems, ...adminNavItems] : navItems
   
   const handleLogout = () => {
     logout()
@@ -39,7 +43,7 @@ export function Layout({ requireAdmin = false }: LayoutProps) {
             
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
+              {activeNavItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
