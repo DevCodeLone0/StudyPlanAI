@@ -168,4 +168,60 @@ router.post('/logout', async (req, res, next) => {
   }
 })
 
+// POST /auth/refresh
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body
+    
+    if (!refreshToken) {
+      throw new BadRequestError('Refresh token is required')
+    }
+    
+    // Verify refresh token exists and not expired
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true },
+    })
+    
+    if (!storedToken || storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedError('Invalid or expired refresh token')
+    }
+    
+    // Generate new tokens
+    const tokens = generateTokens(storedToken.user)
+    
+    // Rotate refresh token: delete old, create new
+    await prisma.refreshToken.delete({
+      where: { id: storedToken.id },
+    })
+    
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7)
+    
+    await prisma.refreshToken.create({
+      data: {
+        token: tokens.refreshToken,
+        expiresAt,
+        userId: storedToken.user.id,
+      },
+    })
+    
+    res.json({
+      user: {
+        id: storedToken.user.id,
+        email: storedToken.user.email,
+        name: storedToken.user.name,
+        role: storedToken.user.role,
+        xp: storedToken.user.xp,
+        level: storedToken.user.level,
+        currentStreak: storedToken.user.currentStreak,
+        longestStreak: storedToken.user.longestStreak,
+      },
+      accessToken: tokens.accessToken,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
 export { router as authRouter }

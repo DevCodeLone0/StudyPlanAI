@@ -10,6 +10,8 @@ dotenv.config()
 import { authRouter } from './routes/auth.js'
 import { userRouter } from './routes/users.js'
 import { planRouter } from './routes/plans.js'
+import { moduleRouter } from './routes/modules.js'
+import { milestoneRouter } from './routes/milestones.js'
 import { aiRouter } from './routes/ai.js'
 import { adminRouter } from './routes/admin.js'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -44,8 +46,8 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/plans', planRouter)
-app.use('/api/v1/modules', planRouter)
-app.use('/api/v1/milestones', planRouter)
+app.use('/api/v1/modules', moduleRouter)
+app.use('/api/v1/milestones', milestoneRouter)
 app.use('/api/v1/ai', aiRouter)
 app.use('/api/v1/admin', adminRouter)
 
