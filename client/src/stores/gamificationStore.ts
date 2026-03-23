@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Badge, UserBadge } from '@/types'
+import type { UserBadge } from '@/types'
 
 interface GamificationState {
   xp: number
@@ -25,7 +25,7 @@ const XP_PER_LEVEL = (level: number) => Math.floor(100 * Math.pow(1.2, level - 1
 
 export const useGamificationStore = create<GamificationState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       xp: 0,
       level: 1,
       currentStreak: 0,

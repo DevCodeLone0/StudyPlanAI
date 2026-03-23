@@ -28,21 +28,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
     
-    // If 401 and not already retrying, try to refresh
+    // If 401 and not already retrying, redirect to login
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       
-      try {
-        const { refreshToken } = useAuthStore.getState()
-        if (refreshToken) {
-          // TODO: Implement token refresh
-          // const response = await authService.refresh(refreshToken)
-          // useAuthStore.getState().setAuth(response.user, response.accessToken)
-        }
-      } catch {
-        useAuthStore.getState().logout()
-        window.location.href = '/login'
-      }
+      useAuthStore.getState().logout()
+      window.location.href = '/login'
     }
     
     return Promise.reject(error)

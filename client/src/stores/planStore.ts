@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Plan, Module, Milestone } from '@/types'
+import type { Plan, Module } from '@/types'
 
 interface PlanState {
   plans: Plan[]

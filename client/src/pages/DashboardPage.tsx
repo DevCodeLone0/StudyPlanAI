@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent, ProgressBar, LevelBadge, Badge } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
-import { useGamificationStore, getLevelProgress } from '@/stores/gamificationStore'
+import { getLevelProgress } from '@/stores/gamificationStore'
 
 export function DashboardPage() {
   const { user } = useAuthStore()

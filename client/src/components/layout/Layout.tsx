@@ -3,6 +3,10 @@ import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
 import { LevelBadge } from '@/components/ui'
 
+interface LayoutProps {
+  requireAdmin?: boolean
+}
+
 const navItems = [
   { path: '/app/dashboard', label: 'Dashboard', icon: '🏠' },
   { path: '/app/planner', label: 'Planner', icon: '📚' },
@@ -10,7 +14,7 @@ const navItems = [
   { path: '/app/profile', label: 'Profile', icon: '👤' },
 ]
 
-export function Layout() {
+export function Layout({ requireAdmin }: LayoutProps) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   
