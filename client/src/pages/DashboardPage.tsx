@@ -1,26 +1,49 @@
+import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent, ProgressBar, LevelBadge, Badge } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
+import { usePlanData } from '@/hooks/usePlanData'
 import { getLevelProgress } from '@/stores/gamificationStore'
+import type { Module } from '@/types'
+
+function getPlanProgress(modules: Module[] | undefined): number {
+  if (!modules || modules.length === 0) return 0
+  const total = modules.reduce((s, m) => s + (m.milestones?.length ?? 0), 0)
+  if (total === 0) return 0
+  const done = modules.reduce(
+    (s, m) => s + (m.milestones?.filter((ms) => ms.completedAt).length ?? 0),
+    0
+  )
+  return Math.round((done / total) * 100)
+}
+
+function getNextMilestone(modules: Module[] | undefined) {
+  if (!modules) return null
+  for (const mod of modules) {
+    for (const ms of mod.milestones ?? []) {
+      if (!ms.completedAt) return { module: mod, milestone: ms }
+    }
+  }
+  return null
+}
 
 export function DashboardPage() {
   const { user } = useAuthStore()
-  
-  // Mock data for MVP
-  const mockPlan = {
-    title: 'Spanish B2 Mastery',
-    progress: 35,
-    currentModule: 'Verb Conjugation',
-    nextMilestone: 'Practice subjunctive mood',
-    estimatedDays: 45,
+  const { activePlan } = usePlanData()
+  const navigate = useNavigate()
+
+  const streak = {
+    current: user?.currentStreak ?? 0,
+    longest: user?.longestStreak ?? 0,
   }
-  
-  const mockStreak = {
-    current: user?.currentStreak || 0,
-    longest: user?.longestStreak || 0,
-  }
-  
-  const progress = user ? getLevelProgress(user.xp, user.level) : { current: 0, needed: 100, percentage: 0 }
-  
+
+  const xpProgress = user
+    ? getLevelProgress(user.xp, user.level)
+    : { current: 0, needed: 100, percentage: 0 }
+
+  const modules = activePlan?.modules
+  const planProgress = getPlanProgress(modules)
+  const nextUp = getNextMilestone(modules)
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -31,25 +54,27 @@ export function DashboardPage() {
           </h1>
           <p className="text-gray-600">Ready to continue your learning journey?</p>
         </div>
-        
+
         {user && (
           <div className="flex items-center gap-4 bg-white rounded-xl p-4 shadow-sm border">
             <LevelBadge level={user.level} size="lg" />
             <div>
               <p className="font-bold text-gray-900">Level {user.level}</p>
-              <p className="text-sm text-gray-500">{progress.current} / {progress.needed} XP</p>
+              <p className="text-sm text-gray-500">
+                {xpProgress.current} / {xpProgress.needed} XP
+              </p>
             </div>
           </div>
         )}
       </div>
-      
+
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-4">
         <StatCard
           icon="🔥"
           label="Current Streak"
-          value={`${mockStreak.current} days`}
-          subLabel={mockStreak.current > 0 ? `Best: ${mockStreak.longest}` : 'Start today!'}
+          value={`${streak.current} days`}
+          subLabel={streak.current > 0 ? `Best: ${streak.longest}` : 'Start today!'}
         />
         <StatCard
           icon="⭐"
@@ -60,17 +85,17 @@ export function DashboardPage() {
         <StatCard
           icon="📚"
           label="Active Plan"
-          value={mockPlan.title}
-          subLabel="Keep going"
+          value={activePlan?.title || 'None yet'}
+          subLabel={activePlan ? 'Keep going' : 'Create one'}
         />
         <StatCard
           icon="🎯"
           label="Progress"
-          value={`${mockPlan.progress}%`}
+          value={activePlan ? `${planProgress}%` : '0%'}
           subLabel="of plan completed"
         />
       </div>
-      
+
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Current Plan Card */}
@@ -79,31 +104,51 @@ export function DashboardPage() {
             <CardTitle>📖 Current Plan</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">{mockPlan.title}</h3>
-                <Badge variant="primary">{mockPlan.currentModule}</Badge>
+            {activePlan ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {activePlan.title}
+                  </h3>
+                  {nextUp && <Badge variant="primary">{nextUp.module.title}</Badge>}
+                </div>
+
+                <ProgressBar value={planProgress} showLabel animated />
+
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-gray-600 mb-2">Next up:</p>
+                  <p className="font-medium text-gray-900">
+                    {nextUp ? nextUp.milestone.title : 'All milestones completed! 🎉'}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-gray-500">
+                    Duration: {activePlan.duration} · {activePlan.dailyTime}/day
+                  </p>
+                  <button
+                    onClick={() => navigate('/app/planner')}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                  >
+                    View Plan →
+                  </button>
+                </div>
               </div>
-              
-              <ProgressBar value={mockPlan.progress} showLabel animated />
-              
-              <div className="pt-4 border-t">
-                <p className="text-sm text-gray-600 mb-2">Next up:</p>
-                <p className="font-medium text-gray-900">{mockPlan.nextMilestone}</p>
-              </div>
-              
-              <div className="flex items-center justify-between pt-4">
-                <p className="text-sm text-gray-500">
-                  Estimated completion: ~{mockPlan.estimatedDays} days
-                </p>
-                <button className="text-primary-600 hover:text-primary-700 font-medium text-sm">
-                  View Plan →
+            ) : (
+              <div className="py-8 text-center">
+                <span className="text-4xl mb-3 block">📚</span>
+                <p className="text-gray-600 mb-4">You don't have an active plan yet.</p>
+                <button
+                  onClick={() => navigate('/app/planner')}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium transition-colors"
+                >
+                  Create a Plan
                 </button>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
-        
+
         {/* Quick Actions */}
         <Card>
           <CardHeader>
@@ -115,59 +160,24 @@ export function DashboardPage() {
                 icon="✅"
                 label="Complete Milestone"
                 description="Mark today's task done"
+                onClick={() => navigate('/app/planner')}
               />
               <QuickAction
                 icon="💬"
                 label="Chat with Tutor"
                 description="Ask any question"
+                onClick={() => navigate('/app/tutor')}
               />
               <QuickAction
                 icon="📊"
                 label="View Statistics"
                 description="See your progress"
+                onClick={() => navigate('/app/profile')}
               />
             </div>
           </CardContent>
         </Card>
       </div>
-      
-      {/* Activity Calendar Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>📅 Study Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 28 }).map((_, i) => {
-              const isToday = i === 27
-              const hasActivity = Math.random() > 0.4
-              return (
-                <div
-                  key={i}
-                  className={`aspect-square rounded ${
-                    isToday 
-                      ? 'ring-2 ring-primary-500' 
-                      : hasActivity 
-                        ? 'bg-success-500' 
-                        : 'bg-gray-200'
-                  }`}
-                  title={`Day ${i + 1}`}
-                />
-              )
-            })}
-          </div>
-          <div className="flex items-center gap-4 mt-4 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-gray-200" />
-              <span>No activity</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-success-500" />
-              <span>Studied</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
@@ -192,13 +202,17 @@ function StatCard({ icon, label, value, subLabel }: {
   )
 }
 
-function QuickAction({ icon, label, description }: {
+function QuickAction({ icon, label, description, onClick }: {
   icon: string
   label: string
   description: string
+  onClick: () => void
 }) {
   return (
-    <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+    >
       <span className="text-2xl">{icon}</span>
       <div>
         <p className="font-medium text-gray-900">{label}</p>
