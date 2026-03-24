@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { PrismaClient } from '@prisma/client'
 import { UnauthorizedError, ForbiddenError } from './errorHandler.js'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.js'
 
 export interface JWTPayload {
   userId: string

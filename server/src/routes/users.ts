@@ -1,10 +1,9 @@
 import { Router } from 'express'
-import { PrismaClient } from '@prisma/client'
 import { authenticate } from '../middleware/auth.js'
 import { NotFoundError } from '../middleware/errorHandler.js'
+import { prisma } from '../lib/prisma.js'
 
 const router = Router()
-const prisma = new PrismaClient()
 
 // GET /users/me
 router.get('/me', authenticate, async (req, res, next) => {

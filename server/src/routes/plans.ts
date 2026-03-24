@@ -1,11 +1,19 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
 import { authenticate } from '../middleware/auth.js'
 import { BadRequestError, NotFoundError } from '../middleware/errorHandler.js'
+import { prisma } from '../lib/prisma.js'
 
 const router = Router()
-const prisma = new PrismaClient()
+
+const updatePlanSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  goal: z.string().optional(),
+  duration: z.string().optional(),
+  dailyTime: z.string().optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'COMPLETED', 'ABANDONED']).optional(),
+})
 
 // GET /plans
 router.get('/', authenticate, async (req, res, next) => {
@@ -57,6 +65,173 @@ router.get('/:id', authenticate, async (req, res, next) => {
     }
     
     res.json(plan)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// PATCH /plans/:id
+router.patch('/:id', authenticate, async (req, res, next) => {
+  try {
+    const data = updatePlanSchema.parse(req.body)
+
+    const plan = await prisma.plan.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.user!.userId,
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    const updated = await prisma.plan.update({
+      where: { id: req.params.id },
+      data,
+      include: {
+        modules: {
+          include: { milestones: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    res.json(updated)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// DELETE /plans/:id
+router.delete('/:id', authenticate, async (req, res, next) => {
+  try {
+    const plan = await prisma.plan.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.user!.userId,
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    await prisma.plan.delete({
+      where: { id: req.params.id },
+    })
+
+    res.json({ message: 'Plan deleted successfully' })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /plans/:id/history
+router.get('/:id/history', authenticate, async (req, res, next) => {
+  try {
+    const plan = await prisma.plan.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.user!.userId,
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    const versions = await prisma.planVersion.findMany({
+      where: { planId: req.params.id },
+      orderBy: { version: 'desc' },
+    })
+
+    res.json(versions)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// POST /plans/:planId/restore/:version
+router.post('/:planId/restore/:version', authenticate, async (req, res, next) => {
+  try {
+    const plan = await prisma.plan.findFirst({
+      where: {
+        id: req.params.planId,
+        userId: req.user!.userId,
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    const planVersion = await prisma.planVersion.findFirst({
+      where: {
+        planId: req.params.planId,
+        version: Number(req.params.version),
+      },
+    })
+
+    if (!planVersion) {
+      throw new NotFoundError('Plan version')
+    }
+
+    const restored = await prisma.plan.update({
+      where: { id: req.params.planId },
+      data: {
+        version: { increment: 1 },
+      },
+      include: {
+        modules: {
+          include: { milestones: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    res.json(restored)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// POST /plans/:planId/modules/reorder
+router.post('/:planId/modules/reorder', authenticate, async (req, res, next) => {
+  try {
+    const { moduleIds } = req.body as { moduleIds: string[] }
+
+    if (!Array.isArray(moduleIds) || moduleIds.length === 0) {
+      throw new BadRequestError('moduleIds must be a non-empty array')
+    }
+
+    const plan = await prisma.plan.findFirst({
+      where: {
+        id: req.params.planId,
+        userId: req.user!.userId,
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    const updates = moduleIds.map((moduleId, index) =>
+      prisma.module.update({
+        where: { id: moduleId },
+        data: { order: index + 1 },
+      })
+    )
+
+    await prisma.$transaction(updates)
+
+    const updatedModules = await prisma.module.findMany({
+      where: { planId: req.params.planId },
+      orderBy: { order: 'asc' },
+      include: { milestones: true },
+    })
+
+    res.json(updatedModules)
   } catch (error) {
     next(error)
   }
@@ -131,93 +306,29 @@ router.patch('/modules/:id', authenticate, async (req, res, next) => {
   }
 })
 
-// POST /modules/:moduleId/milestones
-router.post('/modules/:moduleId/milestones', authenticate, async (req, res, next) => {
+// DELETE /resources/:id
+router.delete('/resources/:id', authenticate, async (req, res, next) => {
   try {
-    const { title, description, order, xpReward, dueDate } = req.body
-    
-    const milestone = await prisma.milestone.create({
-      data: {
-        title,
-        description,
-        order: order || 1,
-        xpReward: xpReward || 50,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        moduleId: req.params.moduleId,
-      },
-    })
-    
-    res.status(201).json(milestone)
-  } catch (error) {
-    next(error)
-  }
-})
-
-// POST /milestones/:id/complete
-router.post('/milestones/:id/complete', authenticate, async (req, res, next) => {
-  try {
-    const userId = req.user!.userId
-    
-    // Get milestone and verify ownership
-    const milestone = await prisma.milestone.findFirst({
+    const resource = await prisma.resource.findFirst({
       where: {
         id: req.params.id,
-        module: {
-          plan: { userId },
-        },
-      },
-      include: {
-        module: {
-          include: { plan: true },
+        milestone: {
+          module: {
+            plan: { userId: req.user!.userId },
+          },
         },
       },
     })
-    
-    if (!milestone) {
-      throw new NotFoundError('Milestone')
+
+    if (!resource) {
+      throw new NotFoundError('Resource')
     }
-    
-    // Update milestone
-    await prisma.milestone.update({
+
+    await prisma.resource.delete({
       where: { id: req.params.id },
-      data: { completedAt: new Date() },
     })
-    
-    // Update user XP
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        xp: { increment: milestone.xpReward },
-      },
-    })
-    
-    // Check for level up
-    const oldLevel = milestone.module.plan.userId ? Math.floor(user.xp / 1000) + 1 : 1
-    
-    // Log activity
-    await prisma.activity.create({
-      data: {
-        userId,
-        type: 'MILESTONE_COMPLETED',
-        metadata: {
-          milestoneId: milestone.id,
-          milestoneTitle: milestone.title,
-          xpEarned: milestone.xpReward,
-        },
-      },
-    })
-    
-    res.json({
-      milestone,
-      xpEarned: milestone.xpReward,
-      totalXp: user.xp,
-      levelUp: false, // TODO: Implement level up logic
-      newBadge: null,
-      streakUpdated: {
-        current: user.currentStreak,
-        longest: user.longestStreak,
-      },
-    })
+
+    res.json({ message: 'Resource deleted successfully' })
   } catch (error) {
     next(error)
   }

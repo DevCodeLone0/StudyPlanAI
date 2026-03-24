@@ -1,11 +1,10 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
 import { authenticate } from '../middleware/auth.js'
 import { NotFoundError } from '../middleware/errorHandler.js'
+import { prisma } from '../lib/prisma.js'
 
 const router = Router()
-const prisma = new PrismaClient()
 
 const updateMilestoneSchema = z.object({
   title: z.string().min(1).optional(),

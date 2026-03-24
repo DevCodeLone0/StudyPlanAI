@@ -20,7 +20,9 @@ const app = express()
 const PORT = process.env.PORT || 3000
 
 // Security middleware
-app.use(helmet())
+app.use(helmet({
+  crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? false : { policy: 'same-origin' },
+}))
 app.use(cors({
   origin: process.env.CORS_ORIGIN || true, // Allow all in production
   credentials: true,
