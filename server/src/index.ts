@@ -23,8 +23,13 @@ const PORT = process.env.PORT || 3000
 app.use(helmet({
   crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? false : { policy: 'same-origin' },
 }))
+// CORS configuration - normalize origin to handle trailing slash
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, ''))
+  : true
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || true, // Allow all in production
+  origin: allowedOrigins,
   credentials: true,
 }))
 
