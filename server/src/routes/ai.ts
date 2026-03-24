@@ -2,6 +2,7 @@ import { Router } from 'express'
 import axios from 'axios'
 import { z } from 'zod'
 import { authenticate } from '../middleware/auth.js'
+import { prisma } from '../lib/prisma.js'
 
 const router = Router()
 
@@ -97,39 +98,116 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
       }
     }
     
+    // Save plan to database
+    const savedPlan = await prisma.plan.create({
+      data: {
+        title: planData.title || goal,
+        description: planData.description,
+        goal,
+        duration,
+        dailyTime,
+        status: 'DRAFT',
+        isActive: false,
+        userId: req.user!.userId,
+        modules: {
+          create: planData.modules?.map((mod: any, modIndex: number) => ({
+            title: mod.title,
+            description: mod.description,
+            order: modIndex + 1,
+            status: 'LOCKED',
+            milestones: {
+              create: mod.milestones?.map((ms: any, msIndex: number) => ({
+                title: ms.title,
+                description: ms.description,
+                order: msIndex + 1,
+                xpReward: 50,
+              })) || [],
+            },
+          })) || [],
+        },
+      },
+      include: {
+        modules: {
+          include: {
+            milestones: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
     res.json({
-      plan: planData,
+      plan: savedPlan,
       estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     })
   } catch (error: any) {
     console.error('AI generation error:', error.response?.data || error.message)
     
     // Get goal from body in case of error
-    const { goal: errorGoal } = req.body
+    const { goal: errorGoal, duration: errorDuration, dailyTime: errorDailyTime } = req.body
     
     // Return a mock plan if API fails (for development)
-    res.json({
-      plan: {
-        title: errorGoal || 'My Study Plan',
-        modules: [
-          {
-            title: 'Introduction',
-            description: 'Getting started with your learning journey',
-            milestones: [
-              { title: 'Set up goals', description: 'Define clear objectives', estimatedDuration: '1 day' },
-              { title: 'Create schedule', description: 'Plan your study time', estimatedDuration: '1 day' },
-            ],
-          },
-          {
-            title: 'Foundation',
-            description: 'Build your foundation knowledge',
-            milestones: [
-              { title: 'Core concepts', description: 'Learn the basics', estimatedDuration: '3 days' },
-              { title: 'Practice exercises', description: 'Apply what you learned', estimatedDuration: '2 days' },
-            ],
-          },
-        ],
+    const mockPlanData = {
+      title: errorGoal || 'My Study Plan',
+      modules: [
+        {
+          title: 'Introduction',
+          description: 'Getting started with your learning journey',
+          milestones: [
+            { title: 'Set up goals', description: 'Define clear objectives', estimatedDuration: '1 day' },
+            { title: 'Create schedule', description: 'Plan your study time', estimatedDuration: '1 day' },
+          ],
+        },
+        {
+          title: 'Foundation',
+          description: 'Build your foundation knowledge',
+          milestones: [
+            { title: 'Core concepts', description: 'Learn the basics', estimatedDuration: '3 days' },
+            { title: 'Practice exercises', description: 'Apply what you learned', estimatedDuration: '2 days' },
+          ],
+        },
+      ],
+    }
+
+    // Save mock plan to database
+    const savedMockPlan = await prisma.plan.create({
+      data: {
+        title: mockPlanData.title,
+        goal: errorGoal || 'Study Plan',
+        duration: errorDuration || '3 months',
+        dailyTime: errorDailyTime || '1 hour',
+        status: 'DRAFT',
+        isActive: false,
+        userId: req.user!.userId,
+        modules: {
+          create: mockPlanData.modules.map((mod: any, modIndex: number) => ({
+            title: mod.title,
+            description: mod.description,
+            order: modIndex + 1,
+            status: 'LOCKED',
+            milestones: {
+              create: mod.milestones.map((ms: any, msIndex: number) => ({
+                title: ms.title,
+                description: ms.description,
+                order: msIndex + 1,
+                xpReward: 50,
+              })),
+            },
+          })),
+        },
       },
+      include: {
+        modules: {
+          include: {
+            milestones: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    res.json({
+      plan: savedMockPlan,
       estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     })
   }
