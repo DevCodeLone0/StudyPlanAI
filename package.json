@@ -1,0 +1,8 @@
+{
+  "name": "studyplanai",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "cd server && npm start",
+    "build": "cd server && npm run build"
+  }
+}
