@@ -160,6 +160,12 @@ router.post('/:planId/restore/:version', authenticate, async (req, res, next) =>
         id: req.params.planId,
         userId: req.user!.userId,
       },
+      include: {
+        modules: {
+          include: { milestones: true },
+          orderBy: { order: 'asc' },
+        },
+      },
     })
 
     if (!plan) {
@@ -177,14 +183,88 @@ router.post('/:planId/restore/:version', authenticate, async (req, res, next) =>
       throw new NotFoundError('Plan version')
     }
 
-    const restored = await prisma.plan.update({
-      where: { id: req.params.planId },
+    const currentSnapshot = {
+      title: plan.title,
+      description: plan.description,
+      goal: plan.goal,
+      duration: plan.duration,
+      dailyTime: plan.dailyTime,
+      status: plan.status,
+      modules: plan.modules.map((m) => ({
+        id: m.id,
+        title: m.title,
+        description: m.description,
+        order: m.order,
+        status: m.status,
+        milestones: m.milestones.map((ms) => ({
+          id: ms.id,
+          title: ms.title,
+          description: ms.description,
+          order: ms.order,
+          xpReward: ms.xpReward,
+          dueDate: ms.dueDate,
+          completedAt: ms.completedAt,
+        })),
+      })),
+    }
+
+    await prisma.planVersion.create({
       data: {
-        version: { increment: 1 },
+        planId: req.params.planId,
+        version: plan.version + 1,
+        data: currentSnapshot,
       },
+    })
+
+    await prisma.plan.update({
+      where: { id: req.params.planId },
+      data: { version: { increment: 1 } },
+    })
+
+    const restoredData = planVersion.data as any
+
+    await prisma.$transaction(async (tx) => {
+      await tx.module.deleteMany({ where: { planId: req.params.planId } })
+
+      for (const mod of restoredData.modules || []) {
+        const createdModule = await tx.module.create({
+          data: {
+            id: mod.id,
+            title: mod.title,
+            description: mod.description,
+            order: mod.order,
+            status: mod.status,
+            planId: req.params.planId,
+          },
+        })
+
+        for (const milestone of mod.milestones || []) {
+          await tx.milestone.create({
+            data: {
+              id: milestone.id,
+              title: milestone.title,
+              description: milestone.description,
+              order: milestone.order,
+              xpReward: milestone.xpReward,
+              dueDate: milestone.dueDate ? new Date(milestone.dueDate) : null,
+              completedAt: milestone.completedAt ? new Date(milestone.completedAt) : null,
+              moduleId: createdModule.id,
+            },
+          })
+        }
+      }
+    })
+
+    const restored = await prisma.plan.findFirst({
+      where: { id: req.params.planId },
       include: {
         modules: {
-          include: { milestones: true },
+          include: {
+            milestones: {
+              include: { resources: true },
+              orderBy: { order: 'asc' },
+            },
+          },
           orderBy: { order: 'asc' },
         },
       },

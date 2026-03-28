@@ -220,4 +220,31 @@ router.post('/:id/resources', authenticate, async (req, res, next) => {
   }
 })
 
+// GET /milestones/:id/resources
+router.get('/:id/resources', authenticate, async (req, res, next) => {
+  try {
+    const milestone = await prisma.milestone.findFirst({
+      where: {
+        id: req.params.id,
+        module: {
+          plan: { userId: req.user!.userId },
+        },
+      },
+    })
+
+    if (!milestone) {
+      throw new NotFoundError('Milestone')
+    }
+
+    const resources = await prisma.resource.findMany({
+      where: { milestoneId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    res.json(resources)
+  } catch (error) {
+    next(error)
+  }
+})
+
 export { router as milestoneRouter }

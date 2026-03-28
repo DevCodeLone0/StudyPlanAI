@@ -1,12 +1,13 @@
 import api from './api'
-import type { 
-  Plan, 
-  Module, 
-  Milestone, 
+import type {
+  Plan,
+  Module,
+  Milestone,
   Resource,
   GeneratePlanRequest,
   GeneratePlanResponse,
   CompleteMilestoneResponse,
+  PlanVersion,
 } from '@/types'
 
 export const planService = {
@@ -40,8 +41,8 @@ export const planService = {
     return response.data
   },
   
-  async getPlanHistory(id: string): Promise<Plan[]> {
-    const response = await api.get<Plan[]>(`/plans/${id}/history`)
+  async getPlanHistory(id: string): Promise<PlanVersion[]> {
+    const response = await api.get<PlanVersion[]>(`/plans/${id}/history`)
     return response.data
   },
   
@@ -89,12 +90,17 @@ export const planService = {
     return response.data
   },
   
-  // Resources
+// Resources
   async addResource(milestoneId: string, data: Partial<Resource>): Promise<Resource> {
     const response = await api.post<Resource>(`/milestones/${milestoneId}/resources`, data)
     return response.data
   },
-  
+
+  async getResources(milestoneId: string): Promise<Resource[]> {
+    const response = await api.get<Resource[]>(`/milestones/${milestoneId}/resources`)
+    return response.data
+  },
+
   async deleteResource(id: string): Promise<void> {
     await api.delete(`/resources/${id}`)
   },

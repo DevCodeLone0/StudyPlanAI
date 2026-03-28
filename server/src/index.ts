@@ -18,6 +18,7 @@ import { streakRouter } from './routes/streaks.js'
 import { badgeRouter } from './routes/badges.js'
 import { rewardRouter } from './routes/rewards.js'
 import { activityRouter } from './routes/activity.js'
+import { resourceRouter } from './routes/resources.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -95,6 +96,7 @@ app.use('/api/v1/streaks', streakRouter)
 app.use('/api/v1/badges', badgeRouter)
 app.use('/api/v1/rewards', rewardRouter)
 app.use('/api/v1/activity', activityRouter)
+app.use('/api/v1/resources', resourceRouter)
 
 // Error handling
 app.use(errorHandler)

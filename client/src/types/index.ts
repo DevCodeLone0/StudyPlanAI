@@ -181,3 +181,11 @@ export interface Analytics {
   averageStreak: number
   topBadges: Badge[]
 }
+
+export interface PlanVersion {
+  id: string
+  version: number
+  data: Plan
+  createdAt: string
+  planId: string
+}
