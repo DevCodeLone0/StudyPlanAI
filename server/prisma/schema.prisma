@@ -245,3 +245,34 @@ enum ActivityType {
   LEVEL_UP
   PLAN_ADJUSTED
 }
+
+// ============================================
+// REWARDS SHOP
+// ============================================
+
+model Reward {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  cost        Int      // XP cost
+  icon        String
+  category    String   // "theme", "avatar", "title", etc.
+
+  purchases   UserReward[]
+
+  @@map("rewards")
+}
+
+model UserReward {
+  id          String   @id @default(cuid())
+  purchasedAt DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rewardId    String
+  reward      Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, rewardId])
+  @@map("user_rewards")
+}

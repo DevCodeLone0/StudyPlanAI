@@ -18,50 +18,50 @@ async function main() {
       code: 'WEEK_WARRIOR',
       name: 'Week Warrior',
       description: 'Maintain a 7-day streak',
-      icon: '7️⃣',
+      icon: '🔥',
       requirement: JSON.stringify({ type: 'streak', value: 7 }),
     },
     {
-      code: 'FAST_LEARNER',
-      name: 'Fast Learner',
-      description: 'Complete 10 milestones',
-      icon: '⚡',
-      requirement: JSON.stringify({ type: 'milestone_count', value: 10 }),
-    },
-    {
-      code: 'DEDICATED',
-      name: 'Dedicated',
+      code: 'MONTH_MASTER',
+      name: 'Month Master',
       description: 'Maintain a 30-day streak',
-      icon: '📚',
+      icon: '🌟',
       requirement: JSON.stringify({ type: 'streak', value: 30 }),
     },
     {
-      code: 'MASTER',
-      name: 'Study Master',
-      description: 'Complete your first plan',
-      icon: '👑',
-      requirement: JSON.stringify({ type: 'plan_completed', value: 1 }),
-    },
-    {
-      code: 'LEVEL_5',
+      code: 'LEVEL_UP_5',
       name: 'Rising Star',
       description: 'Reach level 5',
       icon: '⭐',
       requirement: JSON.stringify({ type: 'level', value: 5 }),
     },
     {
-      code: 'LEVEL_10',
+      code: 'LEVEL_UP_10',
       name: 'Expert',
       description: 'Reach level 10',
       icon: '🌟',
       requirement: JSON.stringify({ type: 'level', value: 10 }),
     },
     {
-      code: 'NIGHT_OWL',
-      name: 'Night Owl',
-      description: 'Study after 10 PM',
-      icon: '🦉',
-      requirement: JSON.stringify({ type: 'special', value: 'night_study' }),
+      code: 'PLAN_MASTER',
+      name: 'Study Master',
+      description: 'Complete your first plan',
+      icon: '👑',
+      requirement: JSON.stringify({ type: 'plan_completed', value: 1 }),
+    },
+    {
+      code: 'MILESTONE_10',
+      name: 'Fast Learner',
+      description: 'Complete 10 milestones',
+      icon: '⚡',
+      requirement: JSON.stringify({ type: 'milestone_count', value: 10 }),
+    },
+    {
+      code: 'MILESTONE_50',
+      name: 'Dedicated Scholar',
+      description: 'Complete 50 milestones',
+      icon: '🏆',
+      requirement: JSON.stringify({ type: 'milestone_count', value: 50 }),
     },
   ]
   
@@ -74,6 +74,65 @@ async function main() {
   }
   
   console.log(`✅ Created ${badges.length} badges`)
+
+  // Create rewards
+  const rewards = [
+    {
+      name: 'Dark Theme',
+      description: 'Unlock a sleek dark theme for your dashboard',
+      cost: 500,
+      icon: '🎨',
+      category: 'theme',
+    },
+    {
+      name: 'Avatar Pack',
+      description: 'Get 5 unique avatar icons',
+      cost: 1000,
+      icon: '👤',
+      category: 'avatar',
+    },
+    {
+      name: '"Master" Title',
+      description: 'Display the "Master" title on your profile',
+      cost: 2000,
+      icon: '🏅',
+      category: 'title',
+    },
+    {
+      name: 'Confetti Effect',
+      description: 'Enhanced confetti animation for celebrations',
+      cost: 1500,
+      icon: '🎊',
+      category: 'effect',
+    },
+    {
+      name: 'Custom Badge Frame',
+      description: 'Unlock a golden frame for your badges',
+      cost: 3000,
+      icon: '🖼️',
+      category: 'effect',
+    },
+    {
+      name: 'Neon Theme',
+      description: 'Futuristic neon theme for your dashboard',
+      cost: 2500,
+      icon: '💡',
+      category: 'theme',
+    },
+  ]
+
+  for (const reward of rewards) {
+    await prisma.reward.upsert({
+      where: { id: reward.name.toLowerCase().replace(/\s+/g, '-') },
+      update: reward,
+      create: {
+        ...reward,
+        id: reward.name.toLowerCase().replace(/\s+/g, '-'),
+      },
+    })
+  }
+
+  console.log(`✅ Created ${rewards.length} rewards`)
   
   // Create admin user
   const adminEmail = 'admin@studyplanai.com'
