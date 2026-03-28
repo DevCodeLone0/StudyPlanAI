@@ -23,6 +23,9 @@ import { errorHandler } from './middleware/errorHandler.js'
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Trust proxy (required for Render and other cloud providers)
+app.set('trust proxy', 1)
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? false : { policy: 'same-origin' },
