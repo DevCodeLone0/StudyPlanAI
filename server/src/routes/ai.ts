@@ -6,6 +6,33 @@ import { prisma } from '../lib/prisma.js'
 
 const router = Router()
 
+// AI Configuration - supports both OpenRouter and NVIDIA NIM
+const AI_CONFIG = {
+  // NVIDIA NIM API (default)
+  nvidia: {
+    baseUrl: 'https://integrate.api.nvidia.com/v1/chat/completions',
+    apiKey: process.env.NVIDIA_API_KEY,
+    model: process.env.AI_MODEL || 'nvidia/llama-3.1-nemotron-70b-instruct',
+  },
+  // OpenRouter API (alternative)
+  openrouter: {
+    baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+    apiKey: process.env.OPENROUTER_API_KEY,
+    model: process.env.AI_MODEL || 'meta-llama/llama-3-8b-instruct',
+  },
+}
+
+// Determine which provider to use
+const getAIConfig = () => {
+  if (process.env.NVIDIA_API_KEY) {
+    return AI_CONFIG.nvidia
+  }
+  if (process.env.OPENROUTER_API_KEY) {
+    return AI_CONFIG.openrouter
+  }
+  return null // No API key configured
+}
+
 const PLAN_GENERATION_PROMPT = `You are an expert curriculum designer. Create a personalized study plan based on:
 - Goal: {goal}
 - Duration: {duration}
@@ -44,11 +71,17 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
       .replace('{dailyTime}', dailyTime)
       .replace('{topics}', topics?.join(', ') || 'General topics')
     
-    // Call OpenRouter API
+    // Call AI API
+    const aiConfig = getAIConfig()
+    
+    if (!aiConfig) {
+      throw new Error('No AI API key configured. Set NVIDIA_API_KEY or OPENROUTER_API_KEY')
+    }
+
     const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
+      aiConfig.baseUrl,
       {
-        model: 'meta-llama/llama-3-8b-instruct',
+        model: aiConfig.model,
         messages: [
           { role: 'system', content: 'You are a helpful curriculum designer.' },
           { role: 'user', content: prompt },
@@ -58,7 +91,7 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${aiConfig.apiKey}`,
           'Content-Type': 'application/json',
         },
       }
@@ -217,8 +250,16 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
 router.post('/chat', authenticate, async (req, res, next) => {
   try {
     const { message, context } = req.body
+
+    const aiConfig = getAIConfig()
     
-    const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI". 
+    if (!aiConfig) {
+      return res.json({
+        message: "I'm here to help with your studies! However, the AI service is not configured. Please contact the administrator to set up the AI API key.",
+      })
+    }
+
+    const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI".
 You help students with their study plans. Be:
 - Supportive and motivating
 - Clear and concise (under 200 words)
@@ -229,9 +270,9 @@ You help students with their study plans. Be:
 Current context: ${context?.currentModule ? `Currently studying: ${context.currentModule}` : 'No active module'}`
 
     const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
+      aiConfig.baseUrl,
       {
-        model: 'meta-llama/llama-3-8b-instruct',
+        model: aiConfig.model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message },
@@ -241,22 +282,22 @@ Current context: ${context?.currentModule ? `Currently studying: ${context.curre
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${aiConfig.apiKey}`,
           'Content-Type': 'application/json',
         },
       }
     )
-    
-    const reply = response.data.choices[0]?.message?.content || 
+
+    const reply = response.data.choices[0]?.message?.content ||
       "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
-    
+
     res.json({ message: reply })
   } catch (error: any) {
     console.error('AI chat error:', error.response?.data || error.message)
-    
+
     // Return a fallback response
     res.json({
-      message: "I'm here to help with your studies! In the full version, I'll be able to provide detailed explanations. For now, try asking specific questions about your study material. 📚",
+      message: "I'm having trouble connecting to the AI service right now. Please try again in a moment. 🔧",
     })
   }
 })
