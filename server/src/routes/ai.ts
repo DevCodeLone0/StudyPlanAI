@@ -12,7 +12,7 @@ const AI_CONFIG = {
   nvidia: {
     baseUrl: 'https://integrate.api.nvidia.com/v1/chat/completions',
     apiKey: process.env.NVIDIA_API_KEY,
-    model: process.env.AI_MODEL || 'nvidia/llama-3.1-nemotron-70b-instruct',
+    model: process.env.AI_MODEL || 'z-ai/glm5',
   },
   // OpenRouter API (alternative)
   openrouter: {
