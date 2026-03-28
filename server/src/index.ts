@@ -31,12 +31,39 @@ app.use(helmet({
   crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? false : { policy: 'same-origin' },
 }))
 // CORS configuration - normalize origin to handle trailing slash
+// Allow both production and preview URLs from Vercel
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, ''))
   : true
 
+// Dynamic origin check for Vercel preview URLs
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  // Allow requests with no origin (mobile apps, curl, etc.)
+  if (!origin) return callback(null, true)
+  
+  // If allowedOrigins is true (development), allow all
+  if (allowedOrigins === true) return callback(null, true)
+  
+  // Check if origin is in allowed list
+  if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) {
+    return callback(null, true)
+  }
+  
+  // Allow Vercel preview URLs (*.vercel.app)
+  if (origin.includes('.vercel.app')) {
+    return callback(null, true)
+  }
+  
+  // Allow Render URLs
+  if (origin.includes('.onrender.com')) {
+    return callback(null, true)
+  }
+  
+  callback(new Error('Not allowed by CORS'))
+}
+
 app.use(cors({
-  origin: allowedOrigins,
+  origin: corsOrigin,
   credentials: true,
 }))
 

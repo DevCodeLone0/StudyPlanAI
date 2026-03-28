@@ -25,11 +25,15 @@ const AI_CONFIG = {
 // Determine which provider to use
 const getAIConfig = () => {
   if (process.env.NVIDIA_API_KEY) {
+    console.log('🤖 AI Provider: NVIDIA NIM')
+    console.log('📦 Model:', process.env.AI_MODEL || 'nvidia/llama-3.1-nemotron-70b-instruct')
     return AI_CONFIG.nvidia
   }
   if (process.env.OPENROUTER_API_KEY) {
+    console.log('🤖 AI Provider: OpenRouter')
     return AI_CONFIG.openrouter
   }
+  console.log('⚠️ No AI API key configured!')
   return null // No API key configured
 }
 
@@ -248,16 +252,21 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
 
 // POST /ai/chat
 router.post('/chat', authenticate, async (req, res, next) => {
+  console.log('📩 AI Chat request received:', req.body.message?.substring(0, 50))
+  
   try {
     const { message, context } = req.body
 
     const aiConfig = getAIConfig()
-    
+
     if (!aiConfig) {
+      console.log('❌ No AI config available')
       return res.json({
         message: "I'm here to help with your studies! However, the AI service is not configured. Please contact the administrator to set up the AI API key.",
       })
     }
+
+    console.log('🔄 Calling AI API:', aiConfig.baseUrl)
 
     const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI".
 You help students with their study plans. Be:
@@ -288,12 +297,13 @@ Current context: ${context?.currentModule ? `Currently studying: ${context.curre
       }
     )
 
+    console.log('✅ AI API response received')
     const reply = response.data.choices[0]?.message?.content ||
       "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
 
     res.json({ message: reply })
   } catch (error: any) {
-    console.error('AI chat error:', error.response?.data || error.message)
+    console.error('❌ AI chat error:', error.response?.data || error.message)
 
     // Return a fallback response
     res.json({
