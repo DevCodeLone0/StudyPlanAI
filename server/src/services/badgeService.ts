@@ -128,7 +128,7 @@ export async function checkAndUnlockBadges(userId: string): Promise<BadgeCheckRe
 
 export async function getBadgesForUser(userId: string) {
   const badges = await prisma.badge.findMany({
-    orderBy: { code: 'ASC' },
+    orderBy: { code: 'asc' },
   })
 
   const userBadges = await prisma.userBadge.findMany({

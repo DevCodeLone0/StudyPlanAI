@@ -12,7 +12,7 @@ router.get('/', authenticate, async (req, res, next) => {
     const userId = req.user!.userId
 
     const rewards = await prisma.reward.findMany({
-      orderBy: { cost: 'ASC' },
+      orderBy: { cost: 'asc' },
     })
 
     const purchasedRewards = await prisma.userReward.findMany({
