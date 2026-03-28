@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Card, Button } from '@/components/ui'
+import { aiService } from '@/services/aiService'
 
 export function TutorPage() {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
@@ -10,32 +11,49 @@ export function TutorPage() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const handleSend = async () => {
     if (!input.trim()) return
-    
+
     const userMessage = { role: 'user' as const, content: input }
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
-    
-    // Simulated AI response for MVP
-    setTimeout(() => {
+
+    try {
+      // Call the AI backend
+      const response = await aiService.chat({
+        message: userMessage.content,
+        context: {
+          currentModule: undefined, // Could be enhanced to pass current module context
+        },
+      })
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: "That's a great question! I'm here to help you learn. In the full version, I'll be able to provide detailed explanations tailored to your study plan. For now, keep up the great work! 📚",
+          content: response.message,
         },
       ])
+    } catch (error) {
+      console.error('AI chat error:', error)
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: "Sorry, I'm having trouble connecting right now. Please try again in a moment. 🔧",
+        },
+      ])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
-  
+
   return (
     <div className="h-[calc(100vh-12rem)] flex flex-col">
       <h1 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI Tutor</h1>
-      
+
       <Card className="flex-1 flex flex-col overflow-hidden">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -55,7 +73,7 @@ export function TutorPage() {
               </div>
             </div>
           ))}
-          
+
           {isLoading && (
             <div className="flex justify-start">
               <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
@@ -68,7 +86,7 @@ export function TutorPage() {
             </div>
           )}
         </div>
-        
+
         {/* Input */}
         <div className="border-t p-4">
           <div className="flex gap-2">
