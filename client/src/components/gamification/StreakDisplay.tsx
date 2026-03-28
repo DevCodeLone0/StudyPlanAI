@@ -153,10 +153,10 @@ export function StreakDisplay({
             </div>
           )}
 
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Last Active:</span>
-            <span className="font-semibold text-gray-900">{formatLastActive(lastActiveAt)}</span>
-          </div>
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-gray-600">Last Active:</span>
+        <span className="font-semibold text-gray-900">{formatLastActive(lastActiveAt ?? null)}</span>
+      </div>
         </div>
 
         {currentStreak > 0 && currentStreak < 7 && (

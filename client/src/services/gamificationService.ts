@@ -2,7 +2,6 @@ import api from './api'
 import type {
   Badge,
   UserBadge,
-  CompleteMilestoneResponse,
 } from '@/types'
 
 // ============================================
@@ -41,6 +40,9 @@ export interface BadgeWithStatus extends Badge {
   earned: boolean
   earnedAt: string | null
 }
+
+// Re-export Badge type for components
+export type { Badge }
 
 // ============================================
 // GAMIFICATION SERVICE

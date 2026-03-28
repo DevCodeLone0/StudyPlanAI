@@ -52,7 +52,6 @@ export function CelebrationModal({
   onClose,
   autoClose = true,
   autoCloseDelay = 5000,
-  className,
 }: CelebrationModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -133,9 +132,9 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-                <Badge variant="success" size="lg">
-                  +{data.xpEarned} XP earned
-                </Badge>
+      <Badge variant="success" size="md">
+        +{data.xpEarned} XP earned
+      </Badge>
               </div>
             )}
           </div>
@@ -160,9 +159,9 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-                <Badge variant="success" size="lg">
-                  +{data.xpEarned} XP earned
-                </Badge>
+      <Badge variant="success" size="md">
+        +{data.xpEarned} XP earned
+      </Badge>
               </div>
             )}
           </div>
@@ -188,9 +187,9 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-                <Badge variant="success" size="lg">
-                  +{data.xpEarned} XP earned
-                </Badge>
+      <Badge variant="success" size="md">
+        +{data.xpEarned} XP earned
+      </Badge>
               </div>
             )}
           </div>
@@ -217,9 +216,9 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-                <Badge variant="success" size="lg">
-                  +{data.xpEarned} XP earned
-                </Badge>
+      <Badge variant="success" size="md">
+        +{data.xpEarned} XP earned
+      </Badge>
               </div>
             )}
           </div>
@@ -243,7 +242,7 @@ export function CelebrationModal({
           'max-w-md w-full transform transition-all duration-300',
           isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         )}
-        onClick={(e) => e.stopPropagation()}
+        onClick={() => {}}
       >
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
