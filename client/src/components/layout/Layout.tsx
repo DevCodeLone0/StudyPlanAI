@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
 import { LevelBadge } from '@/components/ui'
+import { CelebrationProvider } from '@/components/gamification'
 
 interface LayoutProps {
   requireAdmin?: boolean
@@ -40,7 +41,7 @@ export function Layout({ requireAdmin = false }: LayoutProps) {
               <span className="text-2xl">📖</span>
               <span className="font-bold text-xl text-gray-900">StudyPlanAI</span>
             </div>
-            
+
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-1">
               {activeNavItems.map((item) => (
@@ -61,7 +62,7 @@ export function Layout({ requireAdmin = false }: LayoutProps) {
                 </NavLink>
               ))}
             </nav>
-            
+
             {/* User menu */}
             <div className="flex items-center gap-4">
               {user && (
@@ -73,7 +74,7 @@ export function Layout({ requireAdmin = false }: LayoutProps) {
                   <LevelBadge level={user.level} size="sm" />
                 </div>
               )}
-              
+
               <button
                 onClick={handleLogout}
                 className="text-sm text-gray-500 hover:text-gray-700"
@@ -84,11 +85,13 @@ export function Layout({ requireAdmin = false }: LayoutProps) {
           </div>
         </div>
       </header>
-      
+
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
+
+      <CelebrationProvider />
     </div>
   )
 }

@@ -1,8 +1,12 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent, ProgressBar, LevelBadge, Badge } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { usePlanData } from '@/hooks/usePlanData'
 import { getLevelProgress } from '@/stores/gamificationStore'
+import { StreakDisplay } from '@/components/gamification/StreakDisplay'
+import { ActivityCalendar } from '@/components/gamification/ActivityCalendar'
+import { gamificationService, type ActivityCalendarData } from '@/services/gamificationService'
 import type { Module } from '@/types'
 
 function getPlanProgress(modules: Module[] | undefined): number {
@@ -31,6 +35,30 @@ export function DashboardPage() {
   const { activePlan } = usePlanData()
   const navigate = useNavigate()
 
+  const [activityData, setActivityData] = useState<ActivityCalendarData[]>([])
+  const [activityLoading, setActivityLoading] = useState(true)
+  const [activityError, setActivityError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchActivityData = async () => {
+      try {
+        setActivityLoading(true)
+        setActivityError(null)
+        const data = await gamificationService.getActivityCalendar(30)
+        setActivityData(data)
+      } catch (err) {
+        setActivityError('Failed to load activity calendar')
+        console.error('Failed to fetch activity calendar:', err)
+      } finally {
+        setActivityLoading(false)
+      }
+    }
+
+    if (user) {
+      fetchActivityData()
+    }
+  }, [user])
+
   const streak = {
     current: user?.currentStreak ?? 0,
     longest: user?.longestStreak ?? 0,
@@ -43,6 +71,14 @@ export function DashboardPage() {
   const modules = activePlan?.modules
   const planProgress = getPlanProgress(modules)
   const nextUp = getNextMilestone(modules)
+
+  const handleActivityDateClick = (date: string) => {
+    navigate(`/app/profile?date=${date}`)
+  }
+
+  const handleStreakHistoryClick = () => {
+    navigate('/app/profile#streaks')
+  }
 
   return (
     <div className="space-y-6">
@@ -149,36 +185,84 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>⚡ Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <QuickAction
+              icon="✅"
+              label="Complete Milestone"
+              description="Mark today's task done"
+              onClick={() => navigate('/app/planner')}
+            />
+            <QuickAction
+              icon="💬"
+              label="Chat with Tutor"
+              description="Ask any question"
+              onClick={() => navigate('/app/tutor')}
+            />
+            <QuickAction
+              icon="📊"
+              label="View Statistics"
+              description="See your progress"
+              onClick={() => navigate('/app/profile')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    {/* Gamification Section */}
+    <div className="grid lg:grid-cols-2 gap-6">
+      <StreakDisplay
+        currentStreak={streak.current}
+        longestStreak={streak.longest}
+        lastActiveAt={user?.lastActiveAt}
+        showHistory
+        onHistoryClick={handleStreakHistoryClick}
+      />
+
+      {activityLoading ? (
         <Card>
           <CardHeader>
-            <CardTitle>⚡ Quick Actions</CardTitle>
+            <CardTitle>Activity Calendar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <QuickAction
-                icon="✅"
-                label="Complete Milestone"
-                description="Mark today's task done"
-                onClick={() => navigate('/app/planner')}
-              />
-              <QuickAction
-                icon="💬"
-                label="Chat with Tutor"
-                description="Ask any question"
-                onClick={() => navigate('/app/tutor')}
-              />
-              <QuickAction
-                icon="📊"
-                label="View Statistics"
-                description="See your progress"
-                onClick={() => navigate('/app/profile')}
-              />
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
           </CardContent>
         </Card>
-      </div>
+      ) : activityError ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity Calendar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center h-48 text-center">
+              <span className="text-4xl mb-3">⚠️</span>
+              <p className="text-gray-600">{activityError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Try Again
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <ActivityCalendar
+          data={activityData}
+          days={30}
+          onDateClick={handleActivityDateClick}
+        />
+      )}
     </div>
+  </div>
   )
 }
 

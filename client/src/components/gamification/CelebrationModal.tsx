@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/Button'
 import type { Badge as BadgeType } from '@/services/gamificationService'
 
 interface CelebrationModalProps {
-  type: 'level_up' | 'badge_earned' | 'streak_milestone' | 'plan_completed'
+  type: 'level_up' | 'badge_earned' | 'streak_milestone' | 'module_complete'
   data: {
     level?: number
     badge?: BadgeType
     streak?: number
     xpEarned?: number
+    moduleName?: string
   }
   onClose: () => void
   autoClose?: boolean
@@ -24,25 +25,21 @@ const CELEBRATION_CONFIG = {
     title: 'LEVEL UP!',
     icon: '⬆️',
     color: 'from-indigo-500 to-purple-600',
-    sound: 'levelUp',
   },
   badge_earned: {
     title: 'BADGE EARNED!',
     icon: '🏅',
     color: 'from-yellow-400 to-orange-500',
-    sound: 'badgeEarned',
   },
   streak_milestone: {
     title: 'STREAK MILESTONE!',
     icon: '🔥',
     color: 'from-orange-500 to-red-600',
-    sound: 'streakMilestone',
   },
-  plan_completed: {
-    title: 'PLAN COMPLETED!',
-    icon: '🎉',
+  module_complete: {
+    title: 'MODULE COMPLETE!',
+    icon: '✅',
     color: 'from-green-500 to-teal-600',
-    sound: 'planCompleted',
   },
 }
 
@@ -108,8 +105,8 @@ export function CelebrationModal({
         return `🏅 I just earned the "${data.badge?.name}" badge on StudyPlanAI! #StudyPlanAI #BadgeEarned`
       case 'streak_milestone':
         return `🔥 I've maintained a ${data.streak}-day streak on StudyPlanAI! Consistency is key! #StudyPlanAI #Streak`
-      case 'plan_completed':
-        return `🎉 I just completed my study plan on StudyPlanAI! Mission accomplished! #StudyPlanAI #PlanCompleted`
+      case 'module_complete':
+        return `✅ I just completed the "${data.moduleName}" module on StudyPlanAI! #StudyPlanAI #Learning`
       default:
         return 'Check out my progress on StudyPlanAI!'
     }
@@ -187,15 +184,15 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-      <Badge variant="success" size="md">
-        +{data.xpEarned} XP earned
-      </Badge>
+                <Badge variant="success" size="md">
+                  +{data.xpEarned} XP earned
+                </Badge>
               </div>
             )}
           </div>
         )
 
-      case 'plan_completed':
+      case 'module_complete':
         return (
           <div className="space-y-4">
             <div className="flex justify-center">
@@ -209,16 +206,14 @@ export function CelebrationModal({
               </div>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900">Plan Completed!</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Great job sticking to your study plan!
-              </p>
+              <h3 className="text-xl font-bold text-gray-900">{data.moduleName}</h3>
+              <p className="text-sm text-gray-500 mt-1">Module completed successfully!</p>
             </div>
             {data.xpEarned && (
               <div className="text-center">
-      <Badge variant="success" size="md">
-        +{data.xpEarned} XP earned
-      </Badge>
+                <Badge variant="success" size="md">
+                  +{data.xpEarned} XP earned
+                </Badge>
               </div>
             )}
           </div>

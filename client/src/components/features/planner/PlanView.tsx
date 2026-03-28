@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, Badge, ProgressBar } from '@/
 import { XPNotification } from '@/components/ui/XPNotification'
 import { usePlanStore } from '@/stores/planStore'
 import { useGamificationStore } from '@/stores/gamificationStore'
+import { useCelebrationStore, isStreakMilestone } from '@/stores/celebrationStore'
 import { planService } from '@/services/planService'
 import type { Plan, Module, Milestone } from '@/types'
 
@@ -31,7 +32,8 @@ function ModuleCard({ module: mod }: { module: Module }) {
   const [expanded, setExpanded] = useState(mod.status === 'IN_PROGRESS')
   const [completingId, setCompletingId] = useState<string | null>(null)
   const { completeMilestone: completeInStore } = usePlanStore()
-  const { addXP, showXPChange, clearXPChange } = useGamificationStore()
+  const { addXP, showXPChange, clearXPChange, setStreak, setLevel } = useGamificationStore()
+  const { triggerCelebration } = useCelebrationStore()
 
   const progress = getModuleProgress(mod)
 
@@ -45,6 +47,43 @@ function ModuleCard({ module: mod }: { module: Module }) {
       completeInStore(result.milestone.id)
       addXP(result.xpEarned)
       showXPChange(result.xpEarned)
+
+      if (result.streakUpdated) {
+        setStreak(result.streakUpdated.current, result.streakUpdated.longest)
+        if (isStreakMilestone(result.streakUpdated.current)) {
+          triggerCelebration('streak_milestone', {
+            streak: result.streakUpdated.current,
+            xpEarned: result.xpEarned,
+          })
+        }
+      }
+
+      if (result.newBadge) {
+        triggerCelebration('badge_earned', {
+          badge: result.newBadge.badge,
+          xpEarned: result.xpEarned,
+        })
+      }
+
+      if (result.levelUp) {
+        const newLevel = Math.floor((result.totalXp / 100) + 1)
+        setLevel(newLevel)
+        triggerCelebration('level_up', {
+          level: newLevel,
+          xpEarned: result.xpEarned,
+        })
+      }
+
+      const moduleAfter = mod.milestones?.map(m => 
+        m.id === result.milestone.id ? { ...m, completedAt: new Date().toISOString() } : m
+      )
+      const allCompleted = moduleAfter?.every(m => m.completedAt)
+      if (allCompleted && mod.milestones && mod.milestones.length > 0) {
+        triggerCelebration('module_complete', {
+          moduleName: mod.title,
+          xpEarned: result.xpEarned,
+        })
+      }
 
       setTimeout(() => clearXPChange(), 2000)
     } catch (err) {

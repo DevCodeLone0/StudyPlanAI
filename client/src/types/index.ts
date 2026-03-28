@@ -11,6 +11,7 @@ export interface User {
   level: number
   currentStreak: number
   longestStreak: number
+  lastActiveAt?: string | null
   createdAt: string
 }
 

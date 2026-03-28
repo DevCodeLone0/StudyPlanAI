@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { authenticate } from '../middleware/auth.js'
 import { NotFoundError } from '../middleware/errorHandler.js'
 import { prisma } from '../lib/prisma.js'
+import { checkAndUnlockBadges } from '../services/badgeService.js'
 
 const router = Router()
 
@@ -150,31 +151,35 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
       })
     }
 
-    // Log activity
-    await prisma.activity.create({
-      data: {
-        userId,
-        type: 'MILESTONE_COMPLETED',
-        metadata: {
-          milestoneId: milestone.id,
-          milestoneTitle: milestone.title,
-          xpEarned: milestone.xpReward,
-        },
-      },
-    })
+	// Log activity
+	await prisma.activity.create({
+		data: {
+			userId,
+			type: 'MILESTONE_COMPLETED',
+			metadata: {
+				milestoneId: milestone.id,
+				milestoneTitle: milestone.title,
+				xpEarned: milestone.xpReward,
+			},
+		},
+	})
 
-    res.json({
-      milestone: { ...milestone, completedAt: new Date() },
-      xpEarned: milestone.xpReward,
-      totalXp: user.xp,
-      levelUp: leveledUp,
-      newLevel: leveledUp ? newLevel : null,
-      newBadge: null, // TODO: Check for badge unlocks
-      streakUpdated: {
-        current: user.currentStreak,
-        longest: user.longestStreak,
-      },
-    })
+	// Check for badge unlocks
+	const unlockedBadges = await checkAndUnlockBadges(userId)
+	const newBadge = unlockedBadges.length > 0 ? unlockedBadges[0] : null
+
+	res.json({
+		milestone: { ...milestone, completedAt: new Date() },
+		xpEarned: milestone.xpReward,
+		totalXp: user.xp,
+		levelUp: leveledUp,
+		newLevel: leveledUp ? newLevel : null,
+		newBadge,
+		streakUpdated: {
+			current: user.currentStreak,
+			longest: user.longestStreak,
+		},
+	})
   } catch (error) {
     next(error)
   }
