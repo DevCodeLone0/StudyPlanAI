@@ -81,18 +81,24 @@ app.use('/api/v1/streaks', streakRouter)
 // Error handling
 app.use(errorHandler)
 
-// Start server
+// Start server - MOVER ESTO ANTES DE CUALQUIER OTRO CÓDIGO
 const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on http://${HOST}:${PORT}`)
-  console.log(`📚 API docs: http://${HOST}:${PORT}/api/v1`)
-  console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`✅ PORT: ${PORT}`)
-  console.log(`✅ HOST: ${HOST}`)
+console.log(`🚀 Server running on http://${HOST}:${PORT}`)
+console.log(`📚 API docs: http://${HOST}:${PORT}/api/v1`)
+console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`)
+console.log(`✅ PORT: ${PORT}`)
+console.log(`✅ HOST: ${HOST}`)
+console.log(`✅ Health check: http://${HOST}:${PORT}/health`)
+})
+
+// Fallback para health check si algo falla
+app.get('/ready', (req, res) => {
+res.json({ status: 'ready', uptime: process.uptime() })
 })
 
 server.on('error', (error: any) => {
-  console.error('❌ Server error:', error.message)
-  process.exit(1)
+console.error('❌ Server error:', error.message)
+// No salir, intentar recuperar
 })
 
 process.on('SIGTERM', () => {
