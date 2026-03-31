@@ -103,25 +103,30 @@ export const usePlanStore = create<PlanState>((set) => ({
     }
   }),
 
-  reorderModules: (planId, moduleIds) => set((state) => ({
-    plans: state.plans.map((p) => {
+  reorderModules: (planId, moduleIds) => set((state) => {
+    const updatedPlans = state.plans.map((p) => {
       if (p.id !== planId) return p
       
-      const reorderedModules = moduleIds.map((id) =>
-        p.modules?.find((m) => m.id === id)
-      ).filter(Boolean) as Module[]
+      const reorderedModules = moduleIds
+        .map((id) => p.modules?.find((m) => m.id === id))
+        .filter((m): m is Module => m !== undefined)
       
       return { ...p, modules: reorderedModules }
-    }),
-    activePlan: state.activePlan?.id === planId
-      ? {
-          ...state.activePlan,
-          modules: moduleIds.map((id) =>
-            state.activePlan?.modules?.find((m) => m.id === id)
-          ).filter(Boolean),
-        }
-      : state.activePlan,
-  })),
+    })
+
+    let updatedActivePlan = state.activePlan
+    if (state.activePlan?.id === planId) {
+      const reorderedModules = moduleIds
+        .map((id) => state.activePlan?.modules?.find((m) => m.id === id))
+        .filter((m): m is Module => m !== undefined)
+      updatedActivePlan = { ...state.activePlan, modules: reorderedModules }
+    }
+
+    return {
+      plans: updatedPlans,
+      activePlan: updatedActivePlan,
+    }
+  }),
 
   completeMilestone: (milestoneId) => set((state) => {
     const updateMilestonesInModules = (modules: Module[] | undefined): Module[] => {
