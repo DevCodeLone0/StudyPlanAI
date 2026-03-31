@@ -95,13 +95,13 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
       plan: planData,
       estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     })
-  } catch (error: any) {
+} catch (error: any) {
     console.error('AI generation error:', error.response?.data || error.message)
-    
+
     // Return a mock plan if API fails (for development)
     res.json({
       plan: {
-        title: goal || 'My Study Plan',
+        title: 'My Study Plan',
         modules: [
           {
             title: 'Introduction',
