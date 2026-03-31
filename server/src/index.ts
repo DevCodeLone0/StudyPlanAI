@@ -21,14 +21,20 @@ const PORT = process.env.PORT || 3000
 // Security middleware
 app.use(helmet())
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',
+    'https://study-plan-ai.vercel.app',
+    'https://study-plan-7dammccv5-devcodelone0s-projects.vercel.app',
+    ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+  ],
   credentials: true,
 }))
 
 // Rate limiting
+app.set('trust proxy', 1)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: { error: 'Too many requests, please try again later.' },
 })
 app.use('/api', limiter)
