@@ -26,13 +26,14 @@ const HOST = '0.0.0.0'
 // Security middleware
 app.use(helmet())
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://study-plan-ai.vercel.app',
-    'https://study-plan-7dammccv5-devcodelone0s-projects.vercel.app',
-    ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
-  ],
-  credentials: true,
+origin: [
+'http://localhost:5173',
+'https://study-plan-ai.vercel.app',
+'https://study-plan-7dammccv5-devcodelone0s-projects.vercel.app',
+'https://study-plan-4jltwccly-devcodelone0s-projects.vercel.app',
+...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+],
+credentials: true,
 }))
 
 // Rate limiting
