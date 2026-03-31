@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import type { UserBadge } from '@/types'
 
 interface GamificationState {
@@ -23,61 +22,47 @@ interface GamificationState {
 // XP required for each level (exponential growth)
 const XP_PER_LEVEL = (level: number) => Math.floor(100 * Math.pow(1.2, level - 1))
 
-export const useGamificationStore = create<GamificationState>()(
-  persist(
-    (set) => ({
-      xp: 0,
-      level: 1,
-      currentStreak: 0,
-      longestStreak: 0,
-      badges: [],
-      recentXPChange: null,
-      
-      setXP: (xp) => set({ xp }),
-      setLevel: (level) => set({ level }),
-      setStreak: (current, longest) => set({ 
-        currentStreak: current, 
-        longestStreak: longest 
-      }),
-      setBadges: (badges) => set({ badges }),
-      
-      addBadge: (badge) => set((state) => ({
-        badges: [...state.badges, badge]
-      })),
-      
-      addXP: (amount) => set((state) => {
-        const newXP = state.xp + amount
-        let newLevel = state.level
-        let remainingXP = newXP
-        
-        // Check for level ups
-        while (remainingXP >= XP_PER_LEVEL(newLevel)) {
-          remainingXP -= XP_PER_LEVEL(newLevel)
-          newLevel++
-        }
-        
-        return {
-          xp: newXP,
-          level: newLevel,
-          recentXPChange: amount,
-        }
-      }),
-      
-      showXPChange: (amount) => set({ recentXPChange: amount }),
-      clearXPChange: () => set({ recentXPChange: null }),
-    }),
-    {
-      name: 'gamification-storage',
-      partialize: (state) => ({ 
-        xp: state.xp,
-        level: state.level,
-        currentStreak: state.currentStreak,
-        longestStreak: state.longestStreak,
-        badges: state.badges,
-      }),
+export const useGamificationStore = create<GamificationState>((set) => ({
+  xp: 0,
+  level: 1,
+  currentStreak: 0,
+  longestStreak: 0,
+  badges: [],
+  recentXPChange: null,
+  
+  setXP: (xp) => set({ xp }),
+  setLevel: (level) => set({ level }),
+  setStreak: (current, longest) => set({ 
+    currentStreak: current, 
+    longestStreak: longest 
+  }),
+  setBadges: (badges) => set({ badges }),
+  
+  addBadge: (badge) => set((state) => ({
+    badges: [...state.badges, badge]
+  })),
+  
+  addXP: (amount) => set((state) => {
+    const newXP = state.xp + amount
+    let newLevel = state.level
+    let remainingXP = newXP
+    
+    // Check for level ups
+    while (remainingXP >= XP_PER_LEVEL(newLevel)) {
+      remainingXP -= XP_PER_LEVEL(newLevel)
+      newLevel++
     }
-  )
-)
+    
+    return {
+      xp: newXP,
+      level: newLevel,
+      recentXPChange: amount,
+    }
+  }),
+  
+  showXPChange: (amount) => set({ recentXPChange: amount }),
+  clearXPChange: () => set({ recentXPChange: null }),
+}))
 
 // Helper to calculate progress to next level
 export const getLevelProgress = (xp: number, level: number) => {

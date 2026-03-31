@@ -2,41 +2,11 @@ import { Router } from 'express'
 import axios from 'axios'
 import { z } from 'zod'
 import { authenticate } from '../middleware/auth.js'
-import { prisma } from '../lib/prisma.js'
-import { getAIContext, buildTutorSystemPrompt, parseSentiment } from '../services/aiContextService.js'
+import { PrismaClient } from '@prisma/client'
+import { BadRequestError, NotFoundError } from '../middleware/errorHandler.js'
 
 const router = Router()
-
-// AI Configuration - supports both OpenRouter and NVIDIA NIM
-const AI_CONFIG = {
-  // NVIDIA NIM API (default)
-  nvidia: {
-    baseUrl: 'https://integrate.api.nvidia.com/v1/chat/completions',
-    apiKey: process.env.NVIDIA_API_KEY,
-    model: process.env.AI_MODEL || 'z-ai/glm5',
-  },
-  // OpenRouter API (alternative)
-  openrouter: {
-    baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-    apiKey: process.env.OPENROUTER_API_KEY,
-    model: process.env.AI_MODEL || 'meta-llama/llama-3-8b-instruct',
-  },
-}
-
-// Determine which provider to use
-const getAIConfig = () => {
-  if (process.env.NVIDIA_API_KEY) {
-    console.log('🤖 AI Provider: NVIDIA NIM')
-    console.log('📦 Model:', process.env.AI_MODEL || 'nvidia/llama-3.1-nemotron-70b-instruct')
-    return AI_CONFIG.nvidia
-  }
-  if (process.env.OPENROUTER_API_KEY) {
-    console.log('🤖 AI Provider: OpenRouter')
-    return AI_CONFIG.openrouter
-  }
-  console.log('⚠️ No AI API key configured!')
-  return null // No API key configured
-}
+const prisma = new PrismaClient()
 
 const PLAN_GENERATION_PROMPT = `You are an expert curriculum designer. Create a personalized study plan based on:
 - Goal: {goal}
@@ -76,17 +46,11 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
       .replace('{dailyTime}', dailyTime)
       .replace('{topics}', topics?.join(', ') || 'General topics')
     
-    // Call AI API
-    const aiConfig = getAIConfig()
-    
-    if (!aiConfig) {
-      throw new Error('No AI API key configured. Set NVIDIA_API_KEY or OPENROUTER_API_KEY')
-    }
-
+    // Call OpenRouter API
     const response = await axios.post(
-      aiConfig.baseUrl,
+      'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: aiConfig.model,
+        model: 'meta-llama/llama-3-8b-instruct',
         messages: [
           { role: 'system', content: 'You are a helpful curriculum designer.' },
           { role: 'user', content: prompt },
@@ -96,7 +60,7 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
       },
       {
         headers: {
-          'Authorization': `Bearer ${aiConfig.apiKey}`,
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
@@ -117,6 +81,29 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
         title: goal,
         modules: [
           {
+            title: 'Getting Started',
+            description: 'Introduction to your study plan',
+            milestones: [
+              { title: 'Set up your learning environment', description: 'Prepare all necessary materials', estimatedDuration: '1 day' },
+            ],
+          },
+        ],
+      }
+    }
+    
+    res.json({
+      plan: planData,
+      estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    })
+  } catch (error: any) {
+    console.error('AI generation error:', error.response?.data || error.message)
+    
+    // Return a mock plan if API fails (for development)
+    res.json({
+      plan: {
+        title: goal || 'My Study Plan',
+        modules: [
+          {
             title: 'Introduction',
             description: 'Getting started with your learning journey',
             milestones: [
@@ -133,165 +120,31 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
             ],
           },
         ],
-      }
-    }
-    
-    // Save plan to database
-    const savedPlan = await prisma.plan.create({
-      data: {
-        title: planData.title || goal,
-        description: planData.description,
-        goal,
-        duration,
-        dailyTime,
-        status: 'DRAFT',
-        isActive: false,
-        userId: req.user!.userId,
-        modules: {
-          create: planData.modules?.map((mod: any, modIndex: number) => ({
-            title: mod.title,
-            description: mod.description,
-            order: modIndex + 1,
-            status: 'LOCKED',
-            milestones: {
-              create: mod.milestones?.map((ms: any, msIndex: number) => ({
-                title: ms.title,
-                description: ms.description,
-                order: msIndex + 1,
-                xpReward: 50,
-              })) || [],
-            },
-          })) || [],
-        },
       },
-      include: {
-        modules: {
-          include: {
-            milestones: true,
-          },
-          orderBy: { order: 'asc' },
-        },
-      },
-    })
-
-    res.json({
-      plan: savedPlan,
       estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     })
-  } catch (error: any) {
-    console.error('AI generation error:', error.response?.data || error.message)
-    
-    // Get goal from body in case of error
-    const { goal: errorGoal, duration: errorDuration, dailyTime: errorDailyTime } = req.body
-    
-    // Return a mock plan if API fails (for development)
-    const mockPlanData = {
-      title: errorGoal || 'My Study Plan',
-      modules: [
-        {
-          title: 'Introduction',
-          description: 'Getting started with your learning journey',
-          milestones: [
-            { title: 'Set up goals', description: 'Define clear objectives', estimatedDuration: '1 day' },
-            { title: 'Create schedule', description: 'Plan your study time', estimatedDuration: '1 day' },
-          ],
-        },
-        {
-          title: 'Foundation',
-          description: 'Build your foundation knowledge',
-          milestones: [
-            { title: 'Core concepts', description: 'Learn the basics', estimatedDuration: '3 days' },
-            { title: 'Practice exercises', description: 'Apply what you learned', estimatedDuration: '2 days' },
-          ],
-        },
-      ],
-    }
-
-    // Save mock plan to database
-    const savedMockPlan = await prisma.plan.create({
-      data: {
-        title: mockPlanData.title,
-        goal: errorGoal || 'Study Plan',
-        duration: errorDuration || '3 months',
-        dailyTime: errorDailyTime || '1 hour',
-        status: 'DRAFT',
-        isActive: false,
-        userId: req.user!.userId,
-        modules: {
-          create: mockPlanData.modules.map((mod: any, modIndex: number) => ({
-            title: mod.title,
-            description: mod.description,
-            order: modIndex + 1,
-            status: 'LOCKED',
-            milestones: {
-              create: mod.milestones.map((ms: any, msIndex: number) => ({
-                title: ms.title,
-                description: ms.description,
-                order: msIndex + 1,
-                xpReward: 50,
-              })),
-            },
-          })),
-        },
-      },
-      include: {
-        modules: {
-          include: {
-            milestones: true,
-          },
-          orderBy: { order: 'asc' },
-        },
-      },
-    })
-
-    res.json({
-      plan: savedMockPlan,
-      estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    })
-  }
-})
-
-// GET /ai/context - Get user's AI context
-router.get('/context', authenticate, async (req, res, next) => {
-  try {
-    const userId = req.user!.userId
-    const context = await getAIContext(userId)
-    res.json(context)
-  } catch (error) {
-    next(error)
   }
 })
 
 // POST /ai/chat
 router.post('/chat', authenticate, async (req, res, next) => {
-  console.log('📩 AI Chat request received:', req.body.message?.substring(0, 50))
-
   try {
-    const { message } = req.body
-    const userId = req.user!.userId
+    const { message, context } = req.body
+    
+    const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI". 
+You help students with their study plans. Be:
+- Supportive and motivating
+- Clear and concise (under 200 words)
+- Patient with questions
+- Able to provide examples
+- Aware of the student's current plan context
 
-    const aiConfig = getAIConfig()
-
-    if (!aiConfig) {
-      console.log('❌ No AI config available')
-      return res.json({
-        message: "I'm here to help with your studies! However, the AI service is not configured. Please contact the administrator to set up the AI API key.",
-      })
-    }
-
-    // Fetch context for the user
-    console.log('🔄 Fetching AI context for user:', userId)
-    const context = await getAIContext(userId)
-
-    // Build context-aware system prompt
-    const systemPrompt = buildTutorSystemPrompt(context)
-
-    console.log('🔄 Calling AI API:', aiConfig.baseUrl)
+Current context: ${context?.currentModule ? `Currently studying: ${context.currentModule}` : 'No active module'}`
 
     const response = await axios.post(
-      aiConfig.baseUrl,
+      'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: aiConfig.model,
+        model: 'meta-llama/llama-3-8b-instruct',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message },
@@ -301,38 +154,25 @@ router.post('/chat', authenticate, async (req, res, next) => {
       },
       {
         headers: {
-          'Authorization': `Bearer ${aiConfig.apiKey}`,
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
     )
-
-    console.log('✅ AI API response received')
-    const rawReply = response.data.choices[0]?.message?.content || "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
-
-    // Parse sentiment from response
-    const { sentiment, cleanResponse } = parseSentiment(rawReply)
-
-    res.json({
-      message: cleanResponse,
-      sentiment,
-      context: {
-        plan: context.plan,
-        currentModule: context.currentModule,
-        progress: context.progress,
-        streak: context.streak,
-      },
-    })
+    
+    const reply = response.data.choices[0]?.message?.content || 
+      "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
+    
+    res.json({ message: reply })
   } catch (error: any) {
-    console.error('❌ AI chat error:', error.response?.data || error.message)
-
+    console.error('AI chat error:', error.response?.data || error.message)
+    
     // Return a fallback response
     res.json({
-      message: "I'm having trouble connecting to the AI service right now. Please try again in a moment. 🔧",
-      sentiment: null,
+      message: "I'm here to help with your studies! In the full version, I'll be able to provide detailed explanations. For now, try asking specific questions about your study material. 📚",
     })
   }
-	})
+})
 
 // POST /ai/adjust
 router.post('/adjust', authenticate, async (req, res, next) => {
@@ -350,18 +190,233 @@ router.post('/adjust', authenticate, async (req, res, next) => {
 // GET /ai/summary/:planId
 router.get('/summary/:planId', authenticate, async (req, res, next) => {
   try {
-    // TODO: Implement weekly summary generation
+    const userId = req.user!.userId
+    const { planId } = req.params
+
+    const plan = await prisma.plan.findFirst({
+      where: { id: planId, userId },
+      include: {
+        modules: {
+          include: { milestones: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    const totalMilestones = plan.modules.reduce(
+      (acc, module) => acc + module.milestones.length,
+      0
+    )
+    const completedMilestones = plan.modules.reduce(
+      (acc, module) =>
+        acc + module.milestones.filter((m) => m.completedAt).length,
+      0
+    )
+
     res.json({
-      planId: req.params.planId,
-      weekStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      planId: plan.id,
+      weekStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
       weekEnd: new Date().toISOString().split('T')[0],
-      milestonesCompleted: 0,
-      totalMilestones: 0,
+      milestonesCompleted: completedMilestones,
+      totalMilestones,
       timeStudied: '0 hours',
       streakStatus: { current: 0, changed: false },
-      insights: ['Keep up the great work!'],
-      recommendations: ['Try to complete at least one milestone per day'],
+      insights:
+        completedMilestones > 0
+          ? ['Great progress! Keep it up!']
+          : ['Start with small milestones to build momentum'],
+      recommendations:
+        completedMilestones < totalMilestones
+          ? ['Try to complete at least one milestone per day']
+          : ['Consider advancing to the next module'],
     })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /ai/context - Get user's plan context for AI
+router.get('/context', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        plans: {
+          where: { isActive: true },
+          include: {
+            modules: {
+              include: { milestones: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    })
+
+    if (!user) {
+      throw new NotFoundError('User')
+    }
+
+    const activePlan = user.plans[0]
+    const totalMilestones =
+      activePlan?.modules.reduce(
+        (acc, module) => acc + module.milestones.length,
+        0
+      ) || 0
+
+    const completedMilestones =
+      activePlan?.modules.reduce(
+        (acc, module) =>
+          acc + module.milestones.filter((m) => m.completedAt).length,
+        0
+      ) || 0
+
+    const progressPercentage =
+      totalMilestones > 0
+        ? Math.round((completedMilestones / totalMilestones) * 100)
+        : 0
+
+    const context = {
+      user: {
+        name: user.name,
+        level: user.level,
+        xp: user.xp,
+        currentStreak: user.currentStreak,
+      },
+      plan: activePlan
+        ? {
+            title: activePlan.title,
+            goal: activePlan.goal,
+            progress: progressPercentage,
+            totalMilestones,
+            completedMilestones,
+            modules: activePlan.modules.map((m) => ({
+              title: m.title,
+              status: m.status,
+              milestones: m.milestones.map((ms) => ({
+                title: ms.title,
+                completed: !!ms.completedAt,
+              })),
+            })),
+          }
+        : null,
+      recentActivities: user.activities.slice(0, 5).map((a) => ({
+        type: a.type,
+        createdAt: a.createdAt,
+        metadata: a.metadata,
+      })),
+    }
+
+    res.json(context)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// POST /ai/analyze-progress - Analyze user progress
+router.post('/analyze-progress', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        plans: {
+          where: { isActive: true },
+          include: {
+            modules: {
+              include: { milestones: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+      },
+    })
+
+    if (!user) {
+      throw new NotFoundError('User')
+    }
+
+    const activePlan = user.plans[0]
+
+    if (!activePlan) {
+      throw new BadRequestError('No active plan found')
+    }
+
+    const totalMilestones = activePlan.modules.reduce(
+      (acc, module) => acc + module.milestones.length,
+      0
+    )
+
+    const completedMilestones = activePlan.modules.reduce(
+      (acc, module) =>
+        acc + module.milestones.filter((m) => m.completedAt).length,
+      0
+    )
+
+    const progressPercentage =
+      totalMilestones > 0
+        ? Math.round((completedMilestones / totalMilestones) * 100)
+        : 0
+
+    const milestoneCompletionRate = completedMilestones / totalMilestones || 0
+    const daysSinceCreation =
+      (Date.now() - new Date(user.createdAt).getTime()) /
+      (1000 * 60 * 60 * 24)
+    const xpPerDay = user.xp / (daysSinceCreation || 1)
+    const projectedLevel = Math.floor(user.xp / 1000) + 1
+    const needsMotivation =
+      progressPercentage < 30 && completedMilestones < totalMilestones * 0.5
+
+    const analysis = {
+      progress: {
+        percentage: progressPercentage,
+        completed: completedMilestones,
+        total: totalMilestones,
+      },
+      pace: {
+        xpPerDay: Math.round(xpPerDay * 10) / 10,
+        projectedLevel,
+        onTrack: milestoneCompletionRate > 0.5,
+      },
+      recommendations: [
+        milestoneCompletionRate < 0.3
+          ? "¡Vamos! Completá los primeros hitos para ganar impulso."
+          : "¡Gran progreso! Seguí así.",
+      ],
+      motivation: needsMotivation
+        ? "Noto que podrías necesitar un impulso. ¿Qué te parece si completás un hito hoy?"
+        : "¡Excelente ritmo! Seguí así.",
+    }
+
+    await prisma.activity.create({
+      data: {
+        userId,
+        type: 'PLAN_ADJUSTED',
+        metadata: {
+          action: 'progress_analyzed',
+          progress: progressPercentage,
+        },
+      },
+    })
+
+    res.json(analysis)
   } catch (error) {
     next(error)
   }

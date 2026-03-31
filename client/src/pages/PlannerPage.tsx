@@ -1,31 +1,30 @@
-import { usePlanData } from '@/hooks/usePlanData'
-import { PlanGenerator } from '@/components/features/planner/PlanGenerator'
-import { PlanView } from '@/components/features/planner/PlanView'
+import { Card, CardContent } from '@/components/ui'
 
 export function PlannerPage() {
-  const { activePlan, isLoading, error } = usePlanData()
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Study Planner</h1>
+        <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+          + New Plan
+        </button>
       </div>
-
-      {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-lg p-4 text-sm">
-          {error}
-        </div>
-      )}
-
-      {!isLoading && !error && (
-        activePlan ? <PlanView /> : <PlanGenerator />
-      )}
+      
+      <Card>
+        <CardContent className="py-12 text-center">
+          <span className="text-6xl mb-4 block">📚</span>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Create Your First Study Plan
+          </h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Tell us your learning goals and our AI will create a personalized 
+            curriculum just for you.
+          </p>
+          <button className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+            Generate AI Plan
+          </button>
+        </CardContent>
+      </Card>
     </div>
   )
 }

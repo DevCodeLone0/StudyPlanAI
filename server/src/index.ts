@@ -10,61 +10,18 @@ dotenv.config()
 import { authRouter } from './routes/auth.js'
 import { userRouter } from './routes/users.js'
 import { planRouter } from './routes/plans.js'
-import { moduleRouter } from './routes/modules.js'
-import { milestoneRouter } from './routes/milestones.js'
 import { aiRouter } from './routes/ai.js'
 import { adminRouter } from './routes/admin.js'
-import { streakRouter } from './routes/streaks.js'
-import { badgeRouter } from './routes/badges.js'
-import { rewardRouter } from './routes/rewards.js'
-import { activityRouter } from './routes/activity.js'
-import { resourceRouter } from './routes/resources.js'
+import { gamificationRouter } from './routes/gamification.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
 
-// Trust proxy (required for Render and other cloud providers)
-app.set('trust proxy', 1)
-
 // Security middleware
-app.use(helmet({
-  crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? false : { policy: 'same-origin' },
-}))
-// CORS configuration - normalize origin to handle trailing slash
-// Allow both production and preview URLs from Vercel
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, ''))
-  : true
-
-// Dynamic origin check for Vercel preview URLs
-const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-  // Allow requests with no origin (mobile apps, curl, etc.)
-  if (!origin) return callback(null, true)
-  
-  // If allowedOrigins is true (development), allow all
-  if (allowedOrigins === true) return callback(null, true)
-  
-  // Check if origin is in allowed list
-  if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) {
-    return callback(null, true)
-  }
-  
-  // Allow Vercel preview URLs (*.vercel.app)
-  if (origin.includes('.vercel.app')) {
-    return callback(null, true)
-  }
-  
-  // Allow Render URLs
-  if (origin.includes('.onrender.com')) {
-    return callback(null, true)
-  }
-  
-  callback(new Error('Not allowed by CORS'))
-}
-
+app.use(helmet())
 app.use(cors({
-  origin: corsOrigin,
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
 }))
 
@@ -88,15 +45,11 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/plans', planRouter)
-app.use('/api/v1/modules', moduleRouter)
-app.use('/api/v1/milestones', milestoneRouter)
+app.use('/api/v1/modules', planRouter)
+app.use('/api/v1/milestones', planRouter)
 app.use('/api/v1/ai', aiRouter)
 app.use('/api/v1/admin', adminRouter)
-app.use('/api/v1/streaks', streakRouter)
-app.use('/api/v1/badges', badgeRouter)
-app.use('/api/v1/rewards', rewardRouter)
-app.use('/api/v1/activity', activityRouter)
-app.use('/api/v1/resources', resourceRouter)
+app.use('/api/v1/gamification', gamificationRouter)
 
 // Error handling
 app.use(errorHandler)

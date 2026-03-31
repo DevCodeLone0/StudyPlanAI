@@ -5,9 +5,10 @@ import type { User } from '@/types'
 interface AuthState {
   user: User | null
   accessToken: string | null
+  refreshToken: string | undefined
   isAuthenticated: boolean
-  
-  setAuth: (user: User, accessToken: string) => void
+
+  setAuth: (user: User, accessToken: string, refreshToken?: string) => void
   logout: () => void
   updateUser: (updates: Partial<User>) => void
 }
@@ -17,31 +18,35 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: undefined,
       isAuthenticated: false,
-      
-      setAuth: (user, accessToken) => set({ 
-        user, 
-        accessToken, 
-        isAuthenticated: true 
+
+      setAuth: (user, accessToken, refreshToken) => set({
+        user,
+        accessToken,
+        refreshToken,
+        isAuthenticated: true
       }),
-      
-      logout: () => set({ 
-        user: null, 
-        accessToken: null, 
-        isAuthenticated: false 
+
+      logout: () => set({
+        user: null,
+        accessToken: null,
+        refreshToken: undefined,
+        isAuthenticated: false
       }),
-      
+
       updateUser: (updates) => set((state) => ({
         user: state.user ? { ...state.user, ...updates } : null
       })),
     }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ 
-        user: state.user,
-        accessToken: state.accessToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
+  {
+  name: 'auth-storage',
+  partialize: (state) => ({
+    user: state.user,
+    accessToken: state.accessToken,
+    refreshToken: state.refreshToken,
+    isAuthenticated: state.isAuthenticated,
+  }),
+}
   )
 )
