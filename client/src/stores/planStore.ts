@@ -16,6 +16,8 @@ interface PlanState {
   deletePlan: (id: string) => void
   addModule: (planId: string, module: Module) => void
   updateModule: (moduleId: string, updates: Partial<Module>) => void
+  updateMilestone: (milestoneId: string, updates: Partial<any>) => void
+  reorderModules: (planId: string, moduleIds: string[]) => void
   completeMilestone: (milestoneId: string) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
@@ -68,15 +70,59 @@ export const usePlanStore = create<PlanState>((set) => ({
         m.id === moduleId ? { ...m, ...updates } : m
       ),
     })
-    
+
     return {
       plans: state.plans.map(updateModulesInPlan),
-      activePlan: state.activePlan 
-        ? updateModulesInPlan(state.activePlan) 
+      activePlan: state.activePlan
+        ? updateModulesInPlan(state.activePlan)
         : null,
     }
   }),
-  
+
+  updateMilestone: (milestoneId, updates) => set((state) => {
+    const updateMilestonesInModules = (modules: Module[] | undefined): Module[] => {
+      if (!modules) return []
+      return modules.map((m) => ({
+        ...m,
+        milestones: m.milestones?.map((ms) =>
+          ms.id === milestoneId
+            ? { ...ms, ...updates }
+            : ms
+        ),
+      }))
+    }
+
+    const updatePlan = (plan: Plan): Plan => ({
+      ...plan,
+      modules: updateMilestonesInModules(plan.modules),
+    })
+
+    return {
+      plans: state.plans.map(updatePlan),
+      activePlan: state.activePlan ? updatePlan(state.activePlan) : null,
+    }
+  }),
+
+  reorderModules: (planId, moduleIds) => set((state) => ({
+    plans: state.plans.map((p) => {
+      if (p.id !== planId) return p
+      
+      const reorderedModules = moduleIds.map((id) =>
+        p.modules?.find((m) => m.id === id)
+      ).filter(Boolean) as Module[]
+      
+      return { ...p, modules: reorderedModules }
+    }),
+    activePlan: state.activePlan?.id === planId
+      ? {
+          ...state.activePlan,
+          modules: moduleIds.map((id) =>
+            state.activePlan?.modules?.find((m) => m.id === id)
+          ).filter(Boolean),
+        }
+      : state.activePlan,
+  })),
+
   completeMilestone: (milestoneId) => set((state) => {
     const updateMilestonesInModules = (modules: Module[] | undefined): Module[] => {
       if (!modules) return []
