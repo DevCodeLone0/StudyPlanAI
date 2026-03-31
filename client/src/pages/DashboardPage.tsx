@@ -2,29 +2,12 @@ import { Card, CardHeader, CardTitle, CardContent, ProgressBar, LevelBadge, Badg
 import { useAuthStore } from '@/stores/authStore'
 import { getLevelProgress } from '@/stores/gamificationStore'
 import { StreakDisplay, ActivityCalendar, CelebrationModal } from '@/components/gamification'
-import { useEffect, useState } from 'react'
-import { gamificationService } from '@/services/gamificationService'
-import { clsx } from 'clsx'
+import { useState } from 'react'
 
 export function DashboardPage() {
 const { user } = useAuthStore()
-const [activityData, setActivityData] = useState<any[]>([])
-const [loading, setLoading] = useState(true)
+const [loading] = useState(false)
 const [celebration, setCelebration] = useState<{ type: string; data: any } | null>(null)
-
-useEffect(() => {
-const loadActivity = async () => {
-try {
-const data = await gamificationService.getActivityCalendar(30)
-setActivityData(data)
-} catch (error) {
-console.error('Failed to load activity:', error)
-} finally {
-setLoading(false)
-}
-}
-loadActivity()
-}, [])
 
 // Mock data for MVP
 const mockPlan = {
@@ -33,11 +16,6 @@ progress: 35,
 currentModule: 'Verb Conjugation',
 nextMilestone: 'Practice subjunctive mood',
 estimatedDays: 45,
-}
-
-const mockStreak = {
-current: user?.currentStreak || 0,
-longest: user?.longestStreak || 0,
 }
 
 const progress = user ? getLevelProgress(user.xp, user.level) : { current: 0, needed: 100, percentage: 0 }
