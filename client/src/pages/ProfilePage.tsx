@@ -1,16 +1,21 @@
 import { Card, CardHeader, CardTitle, CardContent, LevelBadge, Badge, ProgressBar } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { getLevelProgress } from '@/stores/gamificationStore'
-import { BadgesCollection } from '@/components/gamification'
-import { useState } from 'react'
 
 export function ProfilePage() {
 const { user } = useAuthStore()
-const [loading] = useState(false)
 
 if (!user) return null
 
 const progress = getLevelProgress(user.xp, user.level)
+
+const badges = [
+{ code: 'FIRST_STEPS', name: 'First Steps', icon: '👣', earned: true },
+{ code: 'WEEK_WARRIOR', name: 'Week Warrior', icon: '7️⃣', earned: user.currentStreak >= 7 },
+{ code: 'FAST_LEARNER', name: 'Fast Learner', icon: '⚡', earned: false },
+{ code: 'DEDICATED', name: 'Dedicated', icon: '📚', earned: false },
+{ code: 'MASTER', name: 'Study Master', icon: '👑', earned: false },
+]
 
 return (
 <div className="max-w-3xl mx-auto space-y-6">
@@ -67,14 +72,14 @@ return (
 </CardContent>
 </Card>
 
-{/* Badges - Using mock data for now */}
+{/* Badges */}
 <Card>
 <CardHeader>
 <CardTitle>🏆 Badges</CardTitle>
 </CardHeader>
 <CardContent>
 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-{badges.map((badge: any) => (
+{badges.map((badge) => (
 <div
 key={badge.code}
 className={`text-center p-4 rounded-lg ${
@@ -93,11 +98,3 @@ badge.earned
 </div>
 )
 }
-
-const badges = [
-{ code: 'FIRST_STEPS', name: 'First Steps', icon: '👣', earned: true },
-{ code: 'WEEK_WARRIOR', name: 'Week Warrior', icon: '7️⃣', earned: user.currentStreak >= 7 },
-{ code: 'FAST_LEARNER', name: 'Fast Learner', icon: '⚡', earned: false },
-{ code: 'DEDICATED', name: 'Dedicated', icon: '📚', earned: false },
-{ code: 'MASTER', name: 'Study Master', icon: '👑', earned: false },
-]
