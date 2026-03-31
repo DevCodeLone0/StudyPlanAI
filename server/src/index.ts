@@ -4,7 +4,6 @@ import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
 import dotenv from 'dotenv'
 
-// Load environment variables
 dotenv.config()
 
 import { authRouter } from './routes/auth.js'
@@ -23,40 +22,25 @@ const app = express()
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
 const HOST = '0.0.0.0'
 
-// Security middleware
-const allowedOrigins = [
-'http://localhost:5173',
-'https://study-plan-ai.vercel.app',
-]
-
-// Helper function to check if origin is allowed
-const isAllowedOrigin = (origin: string | undefined) => {
-if (!origin) return false
-// Allow exact matches
-if (allowedOrigins.includes(origin)) return true
-// Allow any vercel.app subdomain
-if (origin.endsWith('.vercel.app')) return true
-// Allow custom CORS_ORIGIN from env
-if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) return true
-return false
-}
+// CORS PERMISIVO - Acepta cualquier origen
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
 
 app.use(helmet())
-app.use(cors({
-origin: isAllowedOrigin,
-credentials: true,
-}))
 
 // Rate limiting
 app.set('trust proxy', 1)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: { error: 'Too many requests, please try again later.' },
+  message: { error: 'Too many requests' },
 })
 app.use('/api', limiter)
 
-// Body parsing
 app.use(express.json())
 
 // Health check
@@ -81,24 +65,18 @@ app.use('/api/v1/streaks', streakRouter)
 // Error handling
 app.use(errorHandler)
 
-// Start server - MOVER ESTO ANTES DE CUALQUIER OTRO CÓDIGO
+// Start server
 const server = app.listen(PORT, HOST, () => {
-console.log(`🚀 Server running on http://${HOST}:${PORT}`)
-console.log(`📚 API docs: http://${HOST}:${PORT}/api/v1`)
-console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`)
-console.log(`✅ PORT: ${PORT}`)
-console.log(`✅ HOST: ${HOST}`)
-console.log(`✅ Health check: http://${HOST}:${PORT}/health`)
-})
-
-// Fallback para health check si algo falla
-app.get('/ready', (req, res) => {
-res.json({ status: 'ready', uptime: process.uptime() })
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`)
+  console.log(`📚 API docs: http://${HOST}:${PORT}/api/v1`)
+  console.log(`✅ Environment: ${process.env.NODE_ENV || 'production'}`)
+  console.log(`✅ PORT: ${PORT}`)
+  console.log(`✅ HOST: ${HOST}`)
 })
 
 server.on('error', (error: any) => {
-console.error('❌ Server error:', error.message)
-// No salir, intentar recuperar
+  console.error('❌ Server error:', error.message)
+  process.exit(1)
 })
 
 process.on('SIGTERM', () => {
