@@ -24,15 +24,26 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
 const HOST = '0.0.0.0'
 
 // Security middleware
-app.use(helmet())
-app.use(cors({
-origin: [
+const allowedOrigins = [
 'http://localhost:5173',
 'https://study-plan-ai.vercel.app',
-'https://study-plan-7dammccv5-devcodelone0s-projects.vercel.app',
-'https://study-plan-4jltwccly-devcodelone0s-projects.vercel.app',
-...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
-],
+]
+
+// Helper function to check if origin is allowed
+const isAllowedOrigin = (origin: string | undefined) => {
+if (!origin) return false
+// Allow exact matches
+if (allowedOrigins.includes(origin)) return true
+// Allow any vercel.app subdomain
+if (origin.endsWith('.vercel.app')) return true
+// Allow custom CORS_ORIGIN from env
+if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) return true
+return false
+}
+
+app.use(helmet())
+app.use(cors({
+origin: isAllowedOrigin,
 credentials: true,
 }))
 
