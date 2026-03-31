@@ -95,21 +95,63 @@ router.post('/:id/activate', authenticate, async (req, res, next) => {
   }
 })
 
+// POST /plans
+router.post('/', authenticate, async (req, res, next) => {
+  try {
+    const { title, description, goal, duration, dailyTime, aiModel, aiPrompt } = req.body
+
+    const plan = await prisma.plan.create({
+      data: {
+        title,
+        description,
+        goal: goal || 'Study effectively',
+        duration: duration || '1 month',
+        dailyTime: dailyTime || '1 hour',
+        aiModel,
+        aiPrompt,
+        userId: req.user!.userId,
+        status: 'DRAFT',
+        isActive: false,
+      },
+      include: {
+        modules: {
+          include: { milestones: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    res.status(201).json(plan)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // POST /plans/:id/modules
 router.post('/:id/modules', authenticate, async (req, res, next) => {
   try {
-    const { title, description, order } = req.body
-    
+    const { title, description, order, estimatedDays } = req.body
+
+    const plan = await prisma.plan.findFirst({
+      where: { id: req.params.id, userId: req.user!.userId },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
     const module = await prisma.module.create({
       data: {
         title,
         description,
         order: order || 1,
+        estimatedDays,
         planId: req.params.id,
+        status: order === 0 ? 'IN_PROGRESS' : 'LOCKED',
       },
       include: { milestones: true },
     })
-    
+
     res.status(201).json(module)
   } catch (error) {
     next(error)
@@ -119,13 +161,44 @@ router.post('/:id/modules', authenticate, async (req, res, next) => {
 // PATCH /modules/:id
 router.patch('/modules/:id', authenticate, async (req, res, next) => {
   try {
-    const module = await prisma.module.update({
+    const { title, description, status } = req.body
+
+    const module = await prisma.module.findFirst({
       where: { id: req.params.id },
-      data: req.body,
+      include: { plan: true },
+    })
+
+    if (!module) {
+      throw new NotFoundError('Module')
+    }
+
+    if (module.plan.userId !== req.user!.userId) {
+      throw new NotFoundError('Module')
+    }
+
+    const updatedModule = await prisma.module.update({
+      where: { id: req.params.id },
+      data: { title, description, status },
       include: { milestones: true },
     })
-    
-    res.json(module)
+
+    if (status === 'COMPLETED') {
+      const nextModule = await prisma.module.findFirst({
+        where: {
+          planId: module.planId,
+          order: module.order + 1,
+        },
+      })
+
+      if (nextModule) {
+        await prisma.module.update({
+          where: { id: nextModule.id },
+          data: { status: 'IN_PROGRESS' },
+        })
+      }
+    }
+
+    res.json(updatedModule)
   } catch (error) {
     next(error)
   }

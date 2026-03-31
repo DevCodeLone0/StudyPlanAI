@@ -2,8 +2,11 @@ import { Router } from 'express'
 import axios from 'axios'
 import { z } from 'zod'
 import { authenticate } from '../middleware/auth.js'
+import { PrismaClient } from '@prisma/client'
+import { BadRequestError, NotFoundError } from '../middleware/errorHandler.js'
 
 const router = Router()
+const prisma = new PrismaClient()
 
 const PLAN_GENERATION_PROMPT = `You are an expert curriculum designer. Create a personalized study plan based on:
 - Goal: {goal}
@@ -187,18 +190,233 @@ router.post('/adjust', authenticate, async (req, res, next) => {
 // GET /ai/summary/:planId
 router.get('/summary/:planId', authenticate, async (req, res, next) => {
   try {
-    // TODO: Implement weekly summary generation
+    const userId = req.user!.userId
+    const { planId } = req.params
+
+    const plan = await prisma.plan.findFirst({
+      where: { id: planId, userId },
+      include: {
+        modules: {
+          include: { milestones: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    if (!plan) {
+      throw new NotFoundError('Plan')
+    }
+
+    const totalMilestones = plan.modules.reduce(
+      (acc, module) => acc + module.milestones.length,
+      0
+    )
+    const completedMilestones = plan.modules.reduce(
+      (acc, module) =>
+        acc + module.milestones.filter((m) => m.completedAt).length,
+      0
+    )
+
     res.json({
-      planId: req.params.planId,
-      weekStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      planId: plan.id,
+      weekStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
       weekEnd: new Date().toISOString().split('T')[0],
-      milestonesCompleted: 0,
-      totalMilestones: 0,
+      milestonesCompleted: completedMilestones,
+      totalMilestones,
       timeStudied: '0 hours',
       streakStatus: { current: 0, changed: false },
-      insights: ['Keep up the great work!'],
-      recommendations: ['Try to complete at least one milestone per day'],
+      insights:
+        completedMilestones > 0
+          ? ['Great progress! Keep it up!']
+          : ['Start with small milestones to build momentum'],
+      recommendations:
+        completedMilestones < totalMilestones
+          ? ['Try to complete at least one milestone per day']
+          : ['Consider advancing to the next module'],
     })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /ai/context - Get user's plan context for AI
+router.get('/context', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        plans: {
+          where: { isActive: true },
+          include: {
+            modules: {
+              include: { milestones: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    })
+
+    if (!user) {
+      throw new NotFoundError('User')
+    }
+
+    const activePlan = user.plans[0]
+    const totalMilestones =
+      activePlan?.modules.reduce(
+        (acc, module) => acc + module.milestones.length,
+        0
+      ) || 0
+
+    const completedMilestones =
+      activePlan?.modules.reduce(
+        (acc, module) =>
+          acc + module.milestones.filter((m) => m.completedAt).length,
+        0
+      ) || 0
+
+    const progressPercentage =
+      totalMilestones > 0
+        ? Math.round((completedMilestones / totalMilestones) * 100)
+        : 0
+
+    const context = {
+      user: {
+        name: user.name,
+        level: user.level,
+        xp: user.xp,
+        currentStreak: user.currentStreak,
+      },
+      plan: activePlan
+        ? {
+            title: activePlan.title,
+            goal: activePlan.goal,
+            progress: progressPercentage,
+            totalMilestones,
+            completedMilestones,
+            modules: activePlan.modules.map((m) => ({
+              title: m.title,
+              status: m.status,
+              milestones: m.milestones.map((ms) => ({
+                title: ms.title,
+                completed: !!ms.completedAt,
+              })),
+            })),
+          }
+        : null,
+      recentActivities: user.activities.slice(0, 5).map((a) => ({
+        type: a.type,
+        createdAt: a.createdAt,
+        metadata: a.metadata,
+      })),
+    }
+
+    res.json(context)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// POST /ai/analyze-progress - Analyze user progress
+router.post('/analyze-progress', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        plans: {
+          where: { isActive: true },
+          include: {
+            modules: {
+              include: { milestones: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+      },
+    })
+
+    if (!user) {
+      throw new NotFoundError('User')
+    }
+
+    const activePlan = user.plans[0]
+
+    if (!activePlan) {
+      throw new BadRequestError('No active plan found')
+    }
+
+    const totalMilestones = activePlan.modules.reduce(
+      (acc, module) => acc + module.milestones.length,
+      0
+    )
+
+    const completedMilestones = activePlan.modules.reduce(
+      (acc, module) =>
+        acc + module.milestones.filter((m) => m.completedAt).length,
+      0
+    )
+
+    const progressPercentage =
+      totalMilestones > 0
+        ? Math.round((completedMilestones / totalMilestones) * 100)
+        : 0
+
+    const milestoneCompletionRate = completedMilestones / totalMilestones || 0
+    const daysSinceCreation =
+      (Date.now() - new Date(user.createdAt).getTime()) /
+      (1000 * 60 * 60 * 24)
+    const xpPerDay = user.xp / (daysSinceCreation || 1)
+    const projectedLevel = Math.floor(user.xp / 1000) + 1
+    const needsMotivation =
+      progressPercentage < 30 && completedMilestones < totalMilestones * 0.5
+
+    const analysis = {
+      progress: {
+        percentage: progressPercentage,
+        completed: completedMilestones,
+        total: totalMilestones,
+      },
+      pace: {
+        xpPerDay: Math.round(xpPerDay * 10) / 10,
+        projectedLevel,
+        onTrack: milestoneCompletionRate > 0.5,
+      },
+      recommendations: [
+        milestoneCompletionRate < 0.3
+          ? "¡Vamos! Completá los primeros hitos para ganar impulso."
+          : "¡Gran progreso! Seguí así.",
+      ],
+      motivation: needsMotivation
+        ? "Noto que podrías necesitar un impulso. ¿Qué te parece si completás un hito hoy?"
+        : "¡Excelente ritmo! Seguí así.",
+    }
+
+    await prisma.activity.create({
+      data: {
+        userId,
+        type: 'PLAN_ADJUSTED',
+        metadata: {
+          action: 'progress_analyzed',
+          progress: progressPercentage,
+        },
+      },
+    })
+
+    res.json(analysis)
   } catch (error) {
     next(error)
   }

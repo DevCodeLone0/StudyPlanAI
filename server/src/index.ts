@@ -12,6 +12,7 @@ import { userRouter } from './routes/users.js'
 import { planRouter } from './routes/plans.js'
 import { aiRouter } from './routes/ai.js'
 import { adminRouter } from './routes/admin.js'
+import { gamificationRouter } from './routes/gamification.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -48,6 +49,7 @@ app.use('/api/v1/modules', planRouter)
 app.use('/api/v1/milestones', planRouter)
 app.use('/api/v1/ai', aiRouter)
 app.use('/api/v1/admin', adminRouter)
+app.use('/api/v1/gamification', gamificationRouter)
 
 // Error handling
 app.use(errorHandler)
