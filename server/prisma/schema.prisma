@@ -15,28 +15,31 @@ datasource db {
 // ============================================
 
 model User {
-  id           String @id @default(cuid())
-  email        String @unique
+  id String @id @default(cuid())
+  email String @unique
   passwordHash String
-  name         String
-  role         Role   @default(STUDENT)
+  name String
+  role Role @default(STUDENT)
 
   // Gamification
-  xp            Int       @default(0)
-  level         Int       @default(1)
-  currentStreak Int       @default(0)
-  longestStreak Int       @default(0)
-  lastActiveAt  DateTime?
+  xp Int @default(0)
+  level Int @default(1)
+  currentStreak Int @default(0)
+  longestStreak Int @default(0)
+  lastActiveAt DateTime?
+
+  // Settings
+  autoAdjustEnabled Boolean @default(false) // NEW: Auto-adjust plan toggle
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  plans         Plan[]
-  badges        UserBadge[]
-  activities    Activity[]
-  rewards       UserReward[]
+  plans Plan[]
+  badges UserBadge[]
+  activities Activity[]
+  rewards UserReward[]
   refreshTokens RefreshToken[]
 
   @@map("users")
@@ -245,6 +248,7 @@ enum ActivityType {
   BADGE_EARNED
   LEVEL_UP
   PLAN_ADJUSTED
+  WEEKLY_REPORT // NEW: For weekly summary reports
 }
 
 // ============================================

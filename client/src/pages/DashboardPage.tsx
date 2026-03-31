@@ -6,6 +6,7 @@ import { usePlanData } from '@/hooks/usePlanData'
 import { getLevelProgress } from '@/stores/gamificationStore'
 import { StreakDisplay } from '@/components/gamification/StreakDisplay'
 import { ActivityCalendar } from '@/components/gamification/ActivityCalendar'
+import { AchievementsWidget } from '@/components/achievements/AchievementsWidget'
 import { gamificationService, type ActivityCalendarData } from '@/services/gamificationService'
 import type { Module } from '@/types'
 
@@ -260,10 +261,13 @@ export function DashboardPage() {
           days={30}
           onDateClick={handleActivityDateClick}
         />
-      )}
-    </div>
-  </div>
-  )
+		)}
+		</div>
+
+		{/* Achievements Section */}
+		<AchievementsWidget />
+	</div>
+	)
 }
 
 function StatCard({ icon, label, value, subLabel }: {

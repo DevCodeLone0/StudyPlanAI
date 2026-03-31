@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, Button } from '@/components/ui'
-import { aiService } from '@/services/aiService'
+import { aiService, type AIContext } from '@/services/aiService'
+import { ContextBanner } from '@/components/tutor/ContextBanner'
 
 export function TutorPage() {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
@@ -11,6 +12,25 @@ export function TutorPage() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [context, setContext] = useState<AIContext | null>(null)
+  const [contextLoading, setContextLoading] = useState(true)
+
+  // Fetch AI context on mount
+  useEffect(() => {
+    const fetchContext = async () => {
+      try {
+        setContextLoading(true)
+        const ctx = await aiService.getContext()
+        setContext(ctx)
+      } catch (error) {
+        console.error('Failed to fetch AI context:', error)
+      } finally {
+        setContextLoading(false)
+      }
+    }
+
+    fetchContext()
+  }, [])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -21,12 +41,9 @@ export function TutorPage() {
     setIsLoading(true)
 
     try {
-      // Call the AI backend
+      // Call the AI backend (context is now auto-injected server-side)
       const response = await aiService.chat({
         message: userMessage.content,
-        context: {
-          currentModule: undefined, // Could be enhanced to pass current module context
-        },
       })
 
       setMessages((prev) => [
@@ -53,6 +70,13 @@ export function TutorPage() {
   return (
     <div className="h-[calc(100vh-12rem)] flex flex-col">
       <h1 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI Tutor</h1>
+
+      {/* Context Banner */}
+      <ContextBanner
+        context={context}
+        isLoading={contextLoading}
+        className="mb-4"
+      />
 
       <Card className="flex-1 flex flex-col overflow-hidden">
         {/* Messages */}

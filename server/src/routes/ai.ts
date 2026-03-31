@@ -3,6 +3,7 @@ import axios from 'axios'
 import { z } from 'zod'
 import { authenticate } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
+import { getAIContext, buildTutorSystemPrompt, parseSentiment } from '../services/aiContextService.js'
 
 const router = Router()
 
@@ -250,12 +251,24 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
   }
 })
 
+// GET /ai/context - Get user's AI context
+router.get('/context', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+    const context = await getAIContext(userId)
+    res.json(context)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // POST /ai/chat
 router.post('/chat', authenticate, async (req, res, next) => {
   console.log('📩 AI Chat request received:', req.body.message?.substring(0, 50))
-  
+
   try {
-    const { message, context } = req.body
+    const { message } = req.body
+    const userId = req.user!.userId
 
     const aiConfig = getAIConfig()
 
@@ -266,17 +279,14 @@ router.post('/chat', authenticate, async (req, res, next) => {
       })
     }
 
+    // Fetch context for the user
+    console.log('🔄 Fetching AI context for user:', userId)
+    const context = await getAIContext(userId)
+
+    // Build context-aware system prompt
+    const systemPrompt = buildTutorSystemPrompt(context)
+
     console.log('🔄 Calling AI API:', aiConfig.baseUrl)
-
-    const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI".
-You help students with their study plans. Be:
-- Supportive and motivating
-- Clear and concise (under 200 words)
-- Patient with questions
-- Able to provide examples
-- Aware of the student's current plan context
-
-Current context: ${context?.currentModule ? `Currently studying: ${context.currentModule}` : 'No active module'}`
 
     const response = await axios.post(
       aiConfig.baseUrl,
@@ -298,19 +308,31 @@ Current context: ${context?.currentModule ? `Currently studying: ${context.curre
     )
 
     console.log('✅ AI API response received')
-    const reply = response.data.choices[0]?.message?.content ||
-      "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
+    const rawReply = response.data.choices[0]?.message?.content || "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
 
-    res.json({ message: reply })
+    // Parse sentiment from response
+    const { sentiment, cleanResponse } = parseSentiment(rawReply)
+
+    res.json({
+      message: cleanResponse,
+      sentiment,
+      context: {
+        plan: context.plan,
+        currentModule: context.currentModule,
+        progress: context.progress,
+        streak: context.streak,
+      },
+    })
   } catch (error: any) {
     console.error('❌ AI chat error:', error.response?.data || error.message)
 
     // Return a fallback response
     res.json({
       message: "I'm having trouble connecting to the AI service right now. Please try again in a moment. 🔧",
+      sentiment: null,
     })
   }
-})
+	})
 
 // POST /ai/adjust
 router.post('/adjust', authenticate, async (req, res, next) => {

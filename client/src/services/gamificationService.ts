@@ -41,8 +41,8 @@ export interface BadgeWithStatus extends Badge {
   earnedAt: string | null
 }
 
-// Re-export Badge type for components
-export type { Badge }
+// Re-export Badge and UserBadge types for components
+export type { Badge, UserBadge }
 
 // ============================================
 // GAMIFICATION SERVICE
