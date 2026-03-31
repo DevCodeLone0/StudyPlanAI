@@ -1,6 +1,6 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui'
+import { Card, CardContent } from '@/components/ui'
 
-export function UsersPage() {
+export function AdminUsersPage() {
   // Mock data for admin
   const users = [
     { id: '1', name: 'John Doe', email: 'john@example.com', level: 5, plans: 2, streak: 7, status: 'active' },

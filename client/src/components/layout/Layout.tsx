@@ -10,7 +10,7 @@ const navItems = [
   { path: '/app/profile', label: 'Profile', icon: '👤' },
 ]
 
-export function Layout() {
+export function Layout({ requireAdmin = false }: { requireAdmin?: boolean }) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Badge, UserBadge } from '@/types'
+import type { UserBadge } from '@/types'
 
 interface GamificationState {
   xp: number
@@ -22,7 +22,7 @@ interface GamificationState {
 // XP required for each level (exponential growth)
 const XP_PER_LEVEL = (level: number) => Math.floor(100 * Math.pow(1.2, level - 1))
 
-export const useGamificationStore = create<GamificationState>((set, get) => ({
+export const useGamificationStore = create<GamificationState>((set) => ({
   xp: 0,
   level: 1,
   currentStreak: 0,
