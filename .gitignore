@@ -39,3 +39,4 @@ server/prisma/migrations/
 # Misc
 .turbo/
 .vercel/
+server/.env

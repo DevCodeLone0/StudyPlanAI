@@ -62,9 +62,25 @@ app.use('/api/v1/gamification', gamificationRouter)
 app.use(errorHandler)
 
 // Start server
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 Server running on http://${HOST}:${PORT}`)
   console.log(`📚 API docs: http://${HOST}:${PORT}/api/v1`)
+  console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`)
+  console.log(`✅ PORT: ${PORT}`)
+  console.log(`✅ HOST: ${HOST}`)
+})
+
+server.on('error', (error: any) => {
+  console.error('❌ Server error:', error.message)
+  process.exit(1)
+})
+
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM received, shutting down gracefully')
+  server.close(() => {
+    console.log('✅ Server closed')
+    process.exit(0)
+  })
 })
 
 export default app
