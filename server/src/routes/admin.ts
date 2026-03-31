@@ -1,6 +1,10 @@
 import { Router } from 'express'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 const router = Router()
 
@@ -99,32 +103,82 @@ router.delete('/users/:id', authenticate, requireAdmin, async (req, res, next) =
 
 // GET /admin/analytics
 router.get('/analytics', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const [
-      totalUsers,
-      activePlans,
-      completedMilestones,
-      totalBadges,
-      avgStreak,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.plan.count({ where: { status: 'ACTIVE' } }),
-      prisma.milestone.count({ where: { completedAt: { not: null } } }),
-      prisma.userBadge.count(),
-      prisma.user.aggregate({ _avg: { currentStreak: true } }),
-    ])
-    
-    res.json({
-      totalUsers,
-      activeUsers: activePlans,
-      totalPlans: activePlans,
-      averageCompletionRate: 0, // TODO: Calculate
-      averageStreak: avgStreak._avg.currentStreak || 0,
-      topBadges: [], // TODO: Get top badges
-    })
-  } catch (error) {
-    next(error)
-  }
+try {
+const [
+totalUsers,
+activePlans,
+completedMilestones,
+totalBadges,
+avgStreak,
+] = await Promise.all([
+prisma.user.count(),
+prisma.plan.count({ where: { status: 'ACTIVE' } }),
+prisma.milestone.count({ where: { completedAt: { not: null } } }),
+prisma.userBadge.count(),
+prisma.user.aggregate({ _avg: { currentStreak: true } }),
+])
+
+res.json({
+totalUsers,
+activeUsers: activePlans,
+totalPlans: activePlans,
+averageCompletionRate: 0, // TODO: Calculate
+averageStreak: avgStreak._avg.currentStreak || 0,
+topBadges: [], // TODO: Get top badges
+})
+} catch (error) {
+next(error)
+}
+})
+
+// POST /admin/migrate - Temporary endpoint to run migrations
+router.post('/migrate', async (req, res, next) => {
+try {
+console.log('🔄 Running migrations...')
+const { stdout, stderr } = await execAsync('npx prisma migrate deploy', {
+cwd: process.cwd(),
+env: process.env,
+})
+
+res.json({
+success: true,
+message: 'Migrations completed successfully',
+output: stdout,
+error: stderr,
+})
+} catch (error: any) {
+console.error('Migration error:', error)
+res.status(500).json({
+success: false,
+message: 'Migration failed',
+error: error.message,
+output: error.stdout,
+stderr: error.stderr,
+})
+}
+})
+
+// GET /admin/db-check - Check database connection
+router.get('/db-check', async (req, res, next) => {
+try {
+await prisma.$queryRaw`SELECT 1`
+const tableCheck = await prisma.$queryRaw`
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+`
+
+res.json({
+status: 'connected',
+tables: Array.isArray(tableCheck) ? tableCheck.length : 0,
+message: 'Database connection successful',
+})
+} catch (error: any) {
+res.status(500).json({
+status: 'error',
+message: error.message,
+})
+}
 })
 
 export { router as adminRouter }
