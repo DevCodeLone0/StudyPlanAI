@@ -1,25 +1,50 @@
 import { Card, CardHeader, CardTitle, CardContent, ProgressBar, LevelBadge, Badge } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { getLevelProgress } from '@/stores/gamificationStore'
+import { StreakDisplay, ActivityCalendar, CelebrationModal } from '@/components/gamification'
+import { useEffect, useState } from 'react'
+import { gamificationService } from '@/services/gamificationService'
+import { clsx } from 'clsx'
 
 export function DashboardPage() {
-  const { user } = useAuthStore()
-  
-  // Mock data for MVP
-  const mockPlan = {
-    title: 'Spanish B2 Mastery',
-    progress: 35,
-    currentModule: 'Verb Conjugation',
-    nextMilestone: 'Practice subjunctive mood',
-    estimatedDays: 45,
-  }
-  
-  const mockStreak = {
-    current: user?.currentStreak || 0,
-    longest: user?.longestStreak || 0,
-  }
-  
-  const progress = user ? getLevelProgress(user.xp, user.level) : { current: 0, needed: 100, percentage: 0 }
+const { user } = useAuthStore()
+const [activityData, setActivityData] = useState<any[]>([])
+const [loading, setLoading] = useState(true)
+const [celebration, setCelebration] = useState<{ type: string; data: any } | null>(null)
+
+useEffect(() => {
+const loadActivity = async () => {
+try {
+const data = await gamificationService.getActivityCalendar(30)
+setActivityData(data)
+} catch (error) {
+console.error('Failed to load activity:', error)
+} finally {
+setLoading(false)
+}
+}
+loadActivity()
+}, [])
+
+// Mock data for MVP
+const mockPlan = {
+title: 'Spanish B2 Mastery',
+progress: 35,
+currentModule: 'Verb Conjugation',
+nextMilestone: 'Practice subjunctive mood',
+estimatedDays: 45,
+}
+
+const mockStreak = {
+current: user?.currentStreak || 0,
+longest: user?.longestStreak || 0,
+}
+
+const progress = user ? getLevelProgress(user.xp, user.level) : { current: 0, needed: 100, percentage: 0 }
+
+const handleCelebrationClose = () => {
+setCelebration(null)
+}
   
   return (
     <div className="space-y-6">
@@ -43,33 +68,42 @@ export function DashboardPage() {
         )}
       </div>
       
-      {/* Stats Grid */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <StatCard
-          icon="🔥"
-          label="Current Streak"
-          value={`${mockStreak.current} days`}
-          subLabel={mockStreak.current > 0 ? `Best: ${mockStreak.longest}` : 'Start today!'}
-        />
-        <StatCard
-          icon="⭐"
-          label="Total XP"
-          value={user?.xp.toLocaleString() || '0'}
-          subLabel="Keep earning!"
-        />
-        <StatCard
-          icon="📚"
-          label="Active Plan"
-          value={mockPlan.title}
-          subLabel="Keep going"
-        />
-        <StatCard
-          icon="🎯"
-          label="Progress"
-          value={`${mockPlan.progress}%`}
-          subLabel="of plan completed"
-        />
-      </div>
+{/* Stats Grid */}
+<div className="grid md:grid-cols-4 gap-4">
+<Card>
+<div className="flex items-center gap-3">
+<span className="text-3xl">⭐</span>
+<div>
+<p className="text-sm text-gray-500">Total XP</p>
+<p className="font-bold text-gray-900">{user?.xp.toLocaleString() || '0'}</p>
+<p className="text-xs text-gray-400">Keep earning!</p>
+</div>
+</div>
+</Card>
+<StatCard
+icon="📚"
+label="Active Plan"
+value={mockPlan.title}
+subLabel="Keep going"
+/>
+<StatCard
+icon="🎯"
+label="Progress"
+value={`${mockPlan.progress}%`}
+subLabel="of plan completed"
+/>
+<Card className="md:col-span-1">
+<CardContent className="p-4">
+{user && (
+<StreakDisplay
+currentStreak={user.currentStreak || 0}
+longestStreak={user.longestStreak || 0}
+showHistory
+/>
+)}
+</CardContent>
+</Card>
+</div>
       
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
@@ -131,65 +165,52 @@ export function DashboardPage() {
         </Card>
       </div>
       
-      {/* Activity Calendar Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>📅 Study Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 28 }).map((_, i) => {
-              const isToday = i === 27
-              const hasActivity = Math.random() > 0.4
-              return (
-                <div
-                  key={i}
-                  className={`aspect-square rounded ${
-                    isToday 
-                      ? 'ring-2 ring-primary-500' 
-                      : hasActivity 
-                        ? 'bg-success-500' 
-                        : 'bg-gray-200'
-                  }`}
-                  title={`Day ${i + 1}`}
-                />
-              )
-            })}
-          </div>
-          <div className="flex items-center gap-4 mt-4 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-gray-200" />
-              <span>No activity</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-success-500" />
-              <span>Studied</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+{/* Activity Calendar */}
+<Card>
+<CardHeader>
+<CardTitle>📅 Study Activity</CardTitle>
+</CardHeader>
+<CardContent>
+{loading ? (
+<div className="h-32 flex items-center justify-center">
+<div className="animate-pulse text-gray-400">Loading...</div>
+</div>
+) : (
+<ActivityCalendar days={30} />
+)}
+</CardContent>
+</Card>
+
+{/* Celebration Modal */}
+{celebration && (
+<CelebrationModal
+type={celebration.type as any}
+data={celebration.data}
+onClose={handleCelebrationClose}
+/>
+)}
+</div>
+)
 }
 
 function StatCard({ icon, label, value, subLabel }: {
-  icon: string
-  label: string
-  value: string
-  subLabel: string
+icon: string
+label: string
+value: string
+subLabel: string
 }) {
-  return (
-    <Card>
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">{icon}</span>
-        <div>
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="font-bold text-gray-900">{value}</p>
-          <p className="text-xs text-gray-400">{subLabel}</p>
-        </div>
-      </div>
-    </Card>
-  )
+return (
+<Card>
+<div className="flex items-center gap-3">
+<span className="text-3xl">{icon}</span>
+<div>
+<p className="text-sm text-gray-500">{label}</p>
+<p className="font-bold text-gray-900">{value}</p>
+<p className="text-xs text-gray-400">{subLabel}</p>
+</div>
+</div>
+</Card>
+)
 }
 
 function QuickAction({ icon, label, description }: {

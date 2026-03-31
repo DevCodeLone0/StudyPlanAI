@@ -13,6 +13,10 @@ import { planRouter } from './routes/plans.js'
 import { aiRouter } from './routes/ai.js'
 import { adminRouter } from './routes/admin.js'
 import { gamificationRouter } from './routes/gamification.js'
+import { badgeRouter } from './routes/badges.js'
+import { rewardRouter } from './routes/rewards.js'
+import { activityRouter } from './routes/activity.js'
+import { streakRouter } from './routes/streaks.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -57,6 +61,10 @@ app.use('/api/v1/milestones', planRouter)
 app.use('/api/v1/ai', aiRouter)
 app.use('/api/v1/admin', adminRouter)
 app.use('/api/v1/gamification', gamificationRouter)
+app.use('/api/v1/badges', badgeRouter)
+app.use('/api/v1/rewards', rewardRouter)
+app.use('/api/v1/activity', activityRouter)
+app.use('/api/v1/streaks', streakRouter)
 
 // Error handling
 app.use(errorHandler)
