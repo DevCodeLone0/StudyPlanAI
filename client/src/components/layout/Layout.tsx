@@ -13,6 +13,10 @@ const navItems = [
 export function Layout({ requireAdmin = false }: { requireAdmin?: boolean }) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+
+  if (requireAdmin && user?.role !== 'ADMIN') {
+    return <div className="p-8 text-center">Access denied. Admin only.</div>
+  }
   
   const handleLogout = () => {
     logout()

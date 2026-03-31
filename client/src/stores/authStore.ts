@@ -5,7 +5,7 @@ import type { User } from '@/types'
 interface AuthState {
   user: User | null
   accessToken: string | null
-  refreshToken: string | null
+  refreshToken: string | undefined
   isAuthenticated: boolean
 
   setAuth: (user: User, accessToken: string, refreshToken?: string) => void
@@ -18,10 +18,10 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
-      refreshToken: null,
+      refreshToken: undefined,
       isAuthenticated: false,
 
-      setAuth: (user, accessToken, refreshToken = null) => set({
+      setAuth: (user, accessToken, refreshToken) => set({
         user,
         accessToken,
         refreshToken,
@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({
         user: null,
         accessToken: null,
-        refreshToken: null,
+        refreshToken: undefined,
         isAuthenticated: false
       }),
 
