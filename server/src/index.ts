@@ -16,7 +16,8 @@ import { gamificationRouter } from './routes/gamification.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
+const HOST = '0.0.0.0'
 
 // Security middleware
 app.use(helmet())
@@ -61,9 +62,9 @@ app.use('/api/v1/gamification', gamificationRouter)
 app.use(errorHandler)
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-  console.log(`📚 API docs: http://localhost:${PORT}/api/v1`)
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`)
+  console.log(`📚 API docs: http://${HOST}:${PORT}/api/v1`)
 })
 
 export default app
