@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
-    "start": "node dist/index.js",
-    "postinstall": "prisma migrate deploy || echo 'Migration failed or not needed'",
+    "start": "bash start.sh",
+    "start:server": "node dist/index.js",
+    "db:migrate": "prisma migrate deploy",
     "lint": "eslint src --ext ts",
     "test": "vitest",
     "test:run": "vitest run",
