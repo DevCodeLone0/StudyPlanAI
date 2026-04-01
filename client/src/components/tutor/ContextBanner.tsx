@@ -30,15 +30,13 @@ export function ContextBanner({ context, isLoading, className }: ContextBannerPr
     )
   }
 
-  const moduleInfo = context.currentModule
-    ? `${context.currentModule.title}`
-    : 'Not started'
+  const moduleInfo = context.plan?.modules?.[0]?.title || 'Not started'
 
-  const progressInfo = `${context.progress.completedMilestones}/${context.progress.totalMilestones}`
+  const progressInfo = `${context.plan.completedMilestones}/${context.plan.totalMilestones}`
 
-  const streakBadge = context.streak.current > 0 && (
+  const streakBadge = context.user?.currentStreak > 0 && (
     <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-medium">
-      🔥 {context.streak.current} days
+      🔥 {context.user.currentStreak} days
     </span>
   )
 
@@ -53,8 +51,8 @@ export function ContextBanner({ context, isLoading, className }: ContextBannerPr
         <div className="flex items-center gap-1.5 text-gray-600">
           <span className="text-base">🎯</span>
           <span>{progressInfo} milestones</span>
-          {context.progress.percentage > 0 && (
-            <span className="text-xs text-gray-500">({context.progress.percentage}%)</span>
+          {context.plan.progress > 0 && (
+            <span className="text-xs text-gray-500">({context.plan.progress}%)</span>
           )}
         </div>
 

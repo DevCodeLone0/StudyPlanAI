@@ -22,35 +22,32 @@ export interface WeeklySummary {
 }
 
 export interface AIContext {
+  user: {
+    name: string
+    level: number
+    xp: number
+    currentStreak: number
+  }
   plan: {
-    id: string
     title: string
-    status: string
-  } | null
-  currentModule: {
-    id: string
-    title: string
-    order: number
-    status: string
-  } | null
-  progress: {
-    completedMilestones: number
+    goal: string
+    progress: number
     totalMilestones: number
-    percentage: number
-  }
-  streak: {
-    current: number
-    longest: number
-  }
-  recentActivity: {
-    lastActiveAt: string | null
-    daysSinceActive: number
-    lastActivities: Array<{
-      type: string
-      createdAt: string
-      metadata: any
+    completedMilestones: number
+    modules: Array<{
+      title: string
+      status: string
+      milestones: Array<{
+        title: string
+        completed: boolean
+      }>
     }>
-  }
+  } | null
+  recentActivities: Array<{
+    type: string
+    createdAt: string
+    metadata: any
+  }>
 }
 
 export interface ChatResponse {
@@ -58,9 +55,7 @@ export interface ChatResponse {
   sentiment?: 'FRUSTRATED' | 'MOTIVATED' | 'NEUTRAL' | 'CONFUSED' | null
   context?: {
     plan: AIContext['plan']
-    currentModule: AIContext['currentModule']
-    progress: AIContext['progress']
-    streak: AIContext['streak']
+    user: AIContext['user']
   }
 }
 
