@@ -3,6 +3,9 @@ set -e
 
 echo "🔄 Running database migrations..."
 
+# Fix for Supabase/pgbouncer: disable prepared statements
+export PRISMA_DISABLE_PREPARED_STATEMENTS="true"
+
 # Retry logic with exponential backoff
 MAX_RETRIES=3
 RETRY_DELAY=5
