@@ -1,9 +1,40 @@
 #!/bin/bash
+set -e
+
 echo "🔄 Running database migrations..."
-timeout 15s npx prisma migrate deploy || {
-echo "⚠️ Migration skipped or failed (timeout or connection issue)"
-echo "📝 The application will start anyway..."
-}
+
+# Retry logic with exponential backoff
+MAX_RETRIES=3
+RETRY_DELAY=5
+TIMEOUT=60
+MIGRATION_SUCCESS=false
+
+for i in $(seq 1 $MAX_RETRIES); do
+  echo "🔄 Migration attempt $i/$MAX_RETRIES..."
+  
+  if timeout ${TIMEOUT}s npx prisma migrate deploy; then
+    echo "✅ Migration successful"
+    MIGRATION_SUCCESS=true
+    break
+  else
+    echo "⚠️ Migration attempt $i failed"
+    
+    if [ $i -eq $MAX_RETRIES ]; then
+      echo "⚠️ All migration attempts failed. Starting anyway..."
+    else
+      echo "⏳ Retrying in ${RETRY_DELAY}s..."
+      sleep $RETRY_DELAY
+      RETRY_DELAY=$((RETRY_DELAY * 2))
+    fi
+  fi
+done
+
+if [ "$MIGRATION_SUCCESS" = true ]; then
+  echo "✅ Database migrations completed successfully"
+else
+  echo "⚠️ Database migrations failed or skipped"
+  echo "📝 The application will start anyway..."
+fi
 
 echo "🚀 Starting server on port $PORT..."
 
