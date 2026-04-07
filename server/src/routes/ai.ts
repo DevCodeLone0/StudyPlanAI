@@ -35,38 +35,50 @@ Rules:
 - Practical, achievable milestones
 - Return ONLY valid JSON, no markdown or explanation`
 
+// Helper function to call NVIDIA AI API
+async function callNvidiaAI(messages: Array<{ role: string; content: string }>, maxTokens: number = 500): Promise<string> {
+  const apiUrl = process.env.NVIDIA_API_URL || 'https://integrate.api.nvidia.com/v1/chat/completions'
+  const apiKey = process.env.NVIDIA_API_KEY
+  const model = process.env.NVIDIA_MODEL || 'nvidia/z-ai/glm5'
+
+  if (!apiKey) {
+    throw new Error('NVIDIA_API_KEY not configured')
+  }
+
+  const response = await axios.post(
+    apiUrl,
+    {
+      model,
+      messages,
+      temperature: 0.7,
+      max_tokens: maxTokens,
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  )
+
+  return response.data.choices[0]?.message?.content || ''
+}
+
 // POST /ai/generate-plan
 router.post('/generate-plan', authenticate, async (req, res, next) => {
   try {
     const { goal, duration, dailyTime, topics } = req.body
-    
+
     const prompt = PLAN_GENERATION_PROMPT
       .replace('{goal}', goal)
       .replace('{duration}', duration)
       .replace('{dailyTime}', dailyTime)
       .replace('{topics}', topics?.join(', ') || 'General topics')
-    
-    // Call OpenRouter API
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
-        messages: [
-          { role: 'system', content: 'You are a helpful curriculum designer.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-    
-    const content = response.data.choices[0]?.message?.content || '{}'
+
+    const content = await callNvidiaAI([
+      { role: 'system', content: 'You are a helpful curriculum designer.' },
+      { role: 'user', content: prompt },
+    ], 2000)
     
     // Parse the JSON response
     let planData
@@ -130,8 +142,8 @@ router.post('/generate-plan', authenticate, async (req, res, next) => {
 router.post('/chat', authenticate, async (req, res, next) => {
   try {
     const { message, context } = req.body
-    
-    const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI". 
+
+    const systemPrompt = `You are a friendly, encouraging AI tutor named "TutorAI".
 You help students with their study plans. Be:
 - Supportive and motivating
 - Clear and concise (under 200 words)
@@ -141,35 +153,17 @@ You help students with their study plans. Be:
 
 Current context: ${context?.currentModule ? `Currently studying: ${context.currentModule}` : 'No active module'}`
 
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message },
-        ],
-        temperature: 0.8,
-        max_tokens: 500,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-    
-    const reply = response.data.choices[0]?.message?.content || 
-      "I'm here to help! Try asking about your current study topic or any concepts you're struggling with."
-    
-    res.json({ message: reply })
+    const reply = await callNvidiaAI([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message },
+    ], 500)
+
+    res.json({ message: reply || "I'm here to help! Try asking about your current study topic." })
   } catch (error: any) {
     console.error('AI chat error:', error.response?.data || error.message)
-    
-    // Return a fallback response
+
     res.json({
-      message: "I'm here to help with your studies! In the full version, I'll be able to provide detailed explanations. For now, try asking specific questions about your study material. 📚",
+      message: "I'm here to help with your studies! Please try asking your question again. 📚",
     })
   }
 })
