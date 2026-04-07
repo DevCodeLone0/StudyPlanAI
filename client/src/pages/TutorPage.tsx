@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { Card, Button } from '@/components/ui'
 import { aiService, type AIContext } from '@/services/aiService'
 import { ContextBanner } from '@/components/tutor/ContextBanner'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export function TutorPage() {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
-      content: "Hi! I'm your AI study tutor. I can help you with:\n\n• Understanding difficult concepts\n• Explaining topics in different ways\n• Providing examples and practice\n• Keeping you motivated!\n\nWhat would you like help with today?",
+      content: "¡Hola! Soy tu tutor IA de estudio. Puedo ayudarte con:\n\n• Entender conceptos difíciles\n• Explicar temas de diferentes maneras\n• Proporcionar ejemplos y práctica\n• ¡Mantenerte motivado!\n\n¿En qué te gustaría que te ayude hoy?",
     },
   ])
   const [input, setInput] = useState('')
@@ -59,7 +61,7 @@ export function TutorPage() {
         ...prev,
         {
           role: 'assistant',
-          content: "Sorry, I'm having trouble connecting right now. Please try again in a moment. 🔧",
+          content: "Lo siento, estoy teniendo problemas para conectarme. Por favor intenta de nuevo en un momento. 🔧",
         },
       ])
     } finally {
@@ -69,7 +71,7 @@ export function TutorPage() {
 
   return (
     <div className="h-[calc(100vh-12rem)] flex flex-col">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI Tutor</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">🤖 Tutor IA</h1>
 
       {/* Context Banner */}
       <ContextBanner
@@ -119,11 +121,11 @@ export function TutorPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask me anything about your studies..."
+              placeholder="Pregúntame cualquier cosa sobre tu estudio..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <Button onClick={handleSend} disabled={!input.trim() || isLoading}>
-              Send
+              Enviar
             </Button>
           </div>
         </div>

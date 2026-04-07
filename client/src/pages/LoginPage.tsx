@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { Button, Input, Card } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { authService } from '@/services/authService'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,24 +15,25 @@ export function LoginPage() {
 
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
-  
+  useTranslation()
+
   const validate = () => {
     const newErrors: typeof errors = {}
     
     if (!email) {
-      newErrors.email = 'Email is required'
+      newErrors.email = 'El correo es requerido'
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Invalid email format'
+      newErrors.email = 'Correo inválido'
     }
-    
+
     if (!password) {
-      newErrors.password = 'Password is required'
+      newErrors.password = 'La contraseña es requerida'
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -43,58 +45,58 @@ export function LoginPage() {
     try {
       const response = await authService.login({ email, password })
       setAuth(response.user, response.accessToken)
-      toast.success('Welcome back!')
+      toast.success('¡Bienvenido de nuevo!')
       navigate('/app/dashboard')
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Login failed')
+      toast.error(error.response?.data?.error || 'Error al iniciar sesión')
     } finally {
       clearTimeout(wakingUpTimer)
       setShowWakingUp(false)
       setIsLoading(false)
     }
   }
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-600 mt-2">Sign in to continue your learning journey</p>
+          <h1 className="text-3xl font-bold text-gray-900">StudyPlanAI</h1>
+          <p className="text-gray-600 mt-2">Inicia sesión para continuar tu aprendizaje</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label="Email"
+            label="Correo electrónico"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder="tu@correo.com"
             error={errors.email}
           />
-          
+
           <Input
-            label="Password"
+            label="Contraseña"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             error={errors.password}
           />
-          
-      <Button type="submit" className="w-full" isLoading={isLoading}>
-        {showWakingUp ? 'Waking up server...' : 'Sign In'}
-      </Button>
-      {showWakingUp && (
-        <p className="text-center text-sm text-gray-500 mt-2">
-          First request takes a moment on free tier...
-        </p>
-      )}
+
+          <Button type="submit" className="w-full" isLoading={isLoading}>
+            {showWakingUp ? 'Despertando servidor...' : 'Iniciar sesión'}
+          </Button>
+          {showWakingUp && (
+            <p className="text-center text-sm text-gray-500 mt-2">
+              La primera solicitud tarda un momento...
+            </p>
+          )}
         </form>
-        
+
         <p className="text-center text-gray-600 mt-6">
-          Don't have an account?{' '}
+          ¿No tienes cuenta?{' '}
           <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-            Sign up
+            Regístrate
           </Link>
         </p>
       </Card>

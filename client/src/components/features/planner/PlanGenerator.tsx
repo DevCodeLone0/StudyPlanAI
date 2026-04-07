@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input, Badge, Progres
 import { planService } from '@/services/planService'
 import { usePlanStore } from '@/stores/planStore'
 import type { Plan } from '@/types'
+import { useTranslation } from '@/hooks/useTranslation'
 
 type GeneratorStep = 'form' | 'loading' | 'preview'
 
 export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
   const navigate = useNavigate()
   const { setActivePlan, addPlan } = usePlanStore()
+  useTranslation()
 
   const [step, setStep] = useState<GeneratorStep>('form')
   const [generatedPlan, setGeneratedPlan] = useState<Plan | null>(null)
@@ -40,7 +42,7 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
       setGeneratedPlan(response.plan)
       setStep('preview')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate plan'
+      const message = err instanceof Error ? err.message : 'Error al generar el plan'
       setError(message)
       setStep('form')
     }
@@ -59,7 +61,7 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
         navigate('/app/planner')
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to activate plan'
+      const message = err instanceof Error ? err.message : 'Error al activar el plan'
       setError(message)
     }
   }
@@ -77,10 +79,10 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
             <div className="inline-block w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Generating your plan...
+            Generando tu plan...
           </h3>
           <p className="text-gray-600 mb-4">
-            Our AI is crafting a personalized curriculum just for you
+            Nuestra IA está creando un plan personalizado para ti
           </p>
           <div className="max-w-xs mx-auto">
             <ProgressBar value={33} animated showLabel={false} />
@@ -97,7 +99,7 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>📋 {generatedPlan.title}</CardTitle>
-              <Badge variant="primary">AI Generated</Badge>
+              <Badge variant="primary">Generado por IA</Badge>
             </div>
             {generatedPlan.description && (
               <p className="text-gray-600 mt-2">{generatedPlan.description}</p>
@@ -106,22 +108,22 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
           <CardContent>
             <div className="grid md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">Goal</p>
+                <p className="text-sm text-gray-500">Objetivo</p>
                 <p className="font-medium text-gray-900">{generatedPlan.goal}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">Duration</p>
+                <p className="text-sm text-gray-500">Duración</p>
                 <p className="font-medium text-gray-900">{generatedPlan.duration}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">Daily Time</p>
+                <p className="text-sm text-gray-500">Tiempo diario</p>
                 <p className="font-medium text-gray-900">{generatedPlan.dailyTime}</p>
               </div>
             </div>
 
             {generatedPlan.modules && generatedPlan.modules.length > 0 && (
               <div className="space-y-3">
-                <h4 className="font-semibold text-gray-900">Modules</h4>
+                <h4 className="font-semibold text-gray-900">Módulos</h4>
                 {generatedPlan.modules.map((mod, index) => (
                   <div
                     key={mod.id}
@@ -150,10 +152,10 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
         )}
 
         <div className="flex gap-4 justify-end">
-          <Button variant="outline" onClick={handleRegenerate}>
-            Regenerate
+          <Button variant="ghost" onClick={handleRegenerate}>
+            Regenerar
           </Button>
-          <Button onClick={handleAccept}>Accept Plan</Button>
+          <Button onClick={handleAccept}>Aceptar Plan</Button>
         </div>
       </div>
     )
@@ -164,17 +166,16 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
       <CardContent className="py-12 text-center">
         <span className="text-6xl mb-4 block">📚</span>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          Create Your Study Plan
+          Crea Tu Plan de Estudio
         </h3>
         <p className="text-gray-600 mb-8 max-w-md mx-auto">
-          Tell us your learning goals and our AI will create a personalized
-          curriculum just for you.
+          Dinos tus objetivos de aprendizaje y nuestra IA creará un plan personalizado para ti.
         </p>
 
         <form onSubmit={handleGenerate} className="max-w-lg mx-auto text-left space-y-4">
           <Input
-            label="What do you want to learn?"
-            placeholder="e.g., Learn Spanish B2, Master React, etc."
+            label="¿Qué quieres aprender?"
+            placeholder="ej. Aprender español B2, Dominar React, etc."
             value={form.goal}
             onChange={(e) => setForm({ ...form, goal: e.target.value })}
             required
@@ -182,15 +183,15 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Duration"
-              placeholder="e.g., 3 months"
+              label="Duración"
+              placeholder="ej. 3 meses"
               value={form.duration}
               onChange={(e) => setForm({ ...form, duration: e.target.value })}
               required
             />
             <Input
-              label="Daily time available"
-              placeholder="e.g., 1 hour"
+              label="Tiempo diario"
+              placeholder="ej. 1 hora"
               value={form.dailyTime}
               onChange={(e) => setForm({ ...form, dailyTime: e.target.value })}
               required
@@ -198,8 +199,8 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
           </div>
 
           <Input
-            label="Specific topics (optional)"
-            placeholder="Comma-separated: grammar, vocabulary, conversation"
+            label="Temas específicos (opcional)"
+            placeholder="Separados por coma: gramática, vocabulario, conversación"
             value={form.topics}
             onChange={(e) => setForm({ ...form, topics: e.target.value })}
           />
@@ -211,7 +212,7 @@ export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
           )}
 
           <Button type="submit" size="lg" className="w-full">
-            Generate AI Plan
+            Generar Plan con IA
           </Button>
         </form>
       </CardContent>
