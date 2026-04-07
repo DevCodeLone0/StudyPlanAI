@@ -55,12 +55,12 @@ export function StreakDisplay({
     const diffHours = diffMs / (1000 * 60 * 60)
 
     if (diffHours > 24) {
-      return '⚠️ Your streak is at risk! Check in today to keep it going.'
+      return '⚠️ ¡Tu racha está en riesgo! Registra tu actividad hoy para mantenerla.'
     }
 
     if (diffHours > 12) {
       const hoursLeft = Math.ceil(24 - diffHours)
-      return `⚠️ Check in within ${hoursLeft} hours to maintain your streak!`
+      return `⚠️ ¡Regístrate en las próximas ${hoursLeft} horas para mantener tu racha!`
     }
 
     return null
@@ -69,7 +69,7 @@ export function StreakDisplay({
   const warningMessage = getWarningMessage()
 
   const formatLastActive = (dateStr: string | null) => {
-    if (!dateStr) return 'Never'
+    if (!dateStr) return 'Nunca'
 
     const date = new Date(dateStr)
     const now = new Date()
@@ -78,12 +78,12 @@ export function StreakDisplay({
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffMins < 60) return `${diffMins} minutes ago`
-    if (diffHours < 24) return `${diffHours} hours ago`
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffMins < 60) return `hace ${diffMins} minutos`
+    if (diffHours < 24) return `hace ${diffHours} horas`
+    if (diffDays === 1) return 'Ayer'
+    if (diffDays < 7) return `hace ${diffDays} días`
 
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
   }
 
   return (
@@ -91,14 +91,14 @@ export function StreakDisplay({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            {getStreakEmoji(currentStreak)} Current Streak
+            {getStreakEmoji(currentStreak)} Racha Actual
           </CardTitle>
           {showHistory && (
             <button
               onClick={onHistoryClick}
               className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
-              View History
+              Ver Historial
             </button>
           )}
         </div>
@@ -113,7 +113,7 @@ export function StreakDisplay({
           >
             <span className="text-5xl font-bold text-white">{currentStreak}</span>
             <span className="text-white/90 text-sm font-medium">
-              {currentStreak === 1 ? 'day' : 'days'}
+              {currentStreak === 1 ? 'día' : 'días'}
             </span>
           </div>
         </div>
@@ -121,7 +121,7 @@ export function StreakDisplay({
         {isPersonalBest && (
           <div className="flex justify-center">
             <Badge variant="warning" size="md" className="animate-pulse">
-              🏆 Personal Best!
+              🏆 ¡Récord Personal!
             </Badge>
           </div>
         )}
@@ -140,29 +140,29 @@ export function StreakDisplay({
 
         <div className="space-y-2 pt-2">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Personal Best:</span>
-            <span className="font-semibold text-gray-900">{longestStreak} days</span>
+            <span className="text-gray-600">Mejor racha:</span>
+            <span className="font-semibold text-gray-900">{longestStreak} días</span>
           </div>
 
           {daysUntilNextMilestone !== null && nextMilestone && (
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Next Milestone:</span>
+              <span className="text-gray-600">Próximo hito:</span>
               <span className="font-semibold text-gray-900">
-                {daysUntilNextMilestone} days ({nextMilestone})
+                {daysUntilNextMilestone} días ({nextMilestone})
               </span>
             </div>
           )}
 
-      <div className="flex justify-between items-center text-sm">
-        <span className="text-gray-600">Last Active:</span>
-        <span className="font-semibold text-gray-900">{formatLastActive(lastActiveAt ?? null)}</span>
-      </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">Última actividad:</span>
+            <span className="font-semibold text-gray-900">{formatLastActive(lastActiveAt ?? null)}</span>
+          </div>
         </div>
 
         {currentStreak > 0 && currentStreak < 7 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
             <span className="text-blue-700 text-sm">
-              Keep going! {7 - currentStreak} more {7 - currentStreak === 1 ? 'day' : 'days'} to unlock your first fire emoji! 🔥
+              ¡Sigue así! {7 - currentStreak} {currentStreak === 6 ? 'día' : 'días'} más para desbloquear tu primer emoji de fuego! 🔥
             </span>
           </div>
         )}

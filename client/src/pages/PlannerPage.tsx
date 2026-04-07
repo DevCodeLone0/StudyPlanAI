@@ -4,10 +4,12 @@ import { PlanView } from '@/components/features/planner/PlanView'
 import { PlanGenerator } from '@/components/features/planner/PlanGenerator'
 import { usePlanStore } from '@/stores/planStore'
 import { planService } from '@/services/planService'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export function PlannerPage() {
   const { activePlan, setActivePlan, setPlans, setLoading, isLoading } = usePlanStore()
   const [showGenerator, setShowGenerator] = useState(false)
+  const { t } = useTranslation()
 
   const loadPlans = async () => {
     setLoading(true)
@@ -52,9 +54,9 @@ export function PlannerPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Create New Plan</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Crear Nuevo Plan</h1>
           <Button variant="ghost" onClick={() => setShowGenerator(false)}>
-            ← Back to Plans
+            ← Volver a Planes
           </Button>
         </div>
         <PlanGenerator onCreated={() => {
@@ -69,9 +71,9 @@ export function PlannerPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Study Planner</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Planificador de Estudio</h1>
           <Button onClick={() => setShowGenerator(true)}>
-            + New Plan
+            + Nuevo Plan
           </Button>
         </div>
         <PlanView />
@@ -82,7 +84,7 @@ export function PlannerPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Study Planner</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Planificador de Estudio</h1>
       </div>
 
       <PlanGenerator />

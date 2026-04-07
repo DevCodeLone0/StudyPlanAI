@@ -18,48 +18,48 @@ type CategoryFilter = 'all' | 'theme' | 'avatar' | 'title' | 'effect'
 const SAMPLE_REWARDS: Reward[] = [
   {
     id: '1',
-    name: 'Dark Theme',
-    description: 'Dark mode theme for your dashboard',
+    name: 'Tema Oscuro',
+    description: 'Tema oscuro para tu dashboard',
     cost: 500,
     icon: '🎨',
     category: 'theme',
   },
   {
     id: '2',
-    name: 'Avatar Pack',
-    description: 'Premium avatar collection',
+    name: 'Pack de Avatares',
+    description: 'Colección premium de avatares',
     cost: 1000,
     icon: '👤',
     category: 'avatar',
   },
   {
     id: '3',
-    name: 'Master Title',
-    description: 'Exclusive "Master" title badge',
+    name: 'Título "Maestro"',
+    description: 'Insignia exclusiva de maestro',
     cost: 2000,
     icon: '🏅',
     category: 'title',
   },
   {
     id: '4',
-    name: 'Confetti Effect',
-    description: 'Celebratory confetti animation',
+    name: 'Efecto Confeti',
+    description: 'Animación de confeti para celebraciones',
     cost: 1500,
     icon: '🎊',
     category: 'effect',
   },
   {
     id: '5',
-    name: 'Custom Badge Frame',
-    description: 'Customizable badge frame design',
+    name: 'Marco de Insignia',
+    description: 'Marco personalizable para insignias',
     cost: 3000,
     icon: '🖼️',
     category: 'title',
   },
   {
     id: '6',
-    name: 'Neon Theme',
-    description: 'Neon cyberpunk theme',
+    name: 'Tema Neón',
+    description: 'Tema ciberpunk neón',
     cost: 2500,
     icon: '✨',
     category: 'theme',
@@ -103,7 +103,7 @@ export function RewardsShop({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Rewards Shop</CardTitle>
+            <CardTitle>Tienda de Recompensas</CardTitle>
             <Badge variant="primary" size="md">
               XP: {userXP.toLocaleString()}
             </Badge>
@@ -123,7 +123,7 @@ export function RewardsShop({
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   )}
                 >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                  {category === 'all' ? 'Todos' : category === 'theme' ? 'Temas' : category === 'avatar' ? 'Avatares' : category === 'title' ? 'Títulos' : 'Efectos'}
                 </button>
               )
             )}
@@ -157,7 +157,7 @@ export function RewardsShop({
                       </Badge>
                       {purchased && (
                         <Badge variant="primary" size="sm">
-                          Purchased
+                          Comprado
                         </Badge>
                       )}
                     </div>
@@ -168,7 +168,7 @@ export function RewardsShop({
                       size="sm"
                       className="w-full"
                     >
-                      {purchased ? 'Owned' : 'Buy'}
+                      {purchased ? 'Comprado' : 'Comprar'}
                     </Button>
                   </div>
                 </Card>
@@ -182,7 +182,7 @@ export function RewardsShop({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-md w-full">
             <CardHeader>
-              <CardTitle>Confirm Purchase</CardTitle>
+              <CardTitle>Confirmar Compra</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
@@ -194,15 +194,15 @@ export function RewardsShop({
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Cost:</span>
+                  <span className="text-gray-600">Costo:</span>
                   <Badge variant="warning">{selectedReward.cost} XP</Badge>
                 </div>
                 <div className="flex justify-between items-center mt-2">
-                  <span className="text-gray-600">Your Balance:</span>
+                  <span className="text-gray-600">Tu saldo:</span>
                   <Badge variant="primary">{userXP.toLocaleString()} XP</Badge>
                 </div>
                 <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
-                  <span className="text-gray-600">Remaining:</span>
+                  <span className="text-gray-600">Restante:</span>
                   <Badge variant="success">
                     {(userXP - selectedReward.cost).toLocaleString()} XP
                   </Badge>
@@ -214,10 +214,10 @@ export function RewardsShop({
                   variant="secondary"
                   className="flex-1"
                 >
-                  Cancel
+                  Cancelar
                 </Button>
                 <Button onClick={handleConfirmPurchase} variant="primary" className="flex-1">
-                  Confirm Purchase
+                  Confirmar Compra
                 </Button>
               </div>
             </CardContent>
