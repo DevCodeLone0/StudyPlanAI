@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Card, CardContent } from '@/components/ui'
+import { useEffect, useState } from 'react'
+import { Card, CardContent, Button } from '@/components/ui'
 import { PlanView } from '@/components/features/planner/PlanView'
 import { PlanGenerator } from '@/components/features/planner/PlanGenerator'
 import { usePlanStore } from '@/stores/planStore'
@@ -7,25 +7,26 @@ import { planService } from '@/services/planService'
 
 export function PlannerPage() {
   const { activePlan, setActivePlan, setPlans, setLoading, isLoading } = usePlanStore()
+  const [showGenerator, setShowGenerator] = useState(false)
+
+  const loadPlans = async () => {
+    setLoading(true)
+    try {
+      const plansData = await planService.getPlans()
+      setPlans(plansData)
+      const active = plansData.find(p => p.isActive) || plansData[0]
+      if (active) {
+        const fullPlan = await planService.getPlan(active.id)
+        setActivePlan(fullPlan)
+      }
+    } catch (err) {
+      console.error('Failed to load plans:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const loadPlans = async () => {
-      setLoading(true)
-      try {
-        const plans = await planService.getPlans()
-        setPlans(plans)
-        const active = plans.find(p => p.isActive) || plans[0]
-        if (active) {
-          const fullPlan = await planService.getPlan(active.id)
-          setActivePlan(fullPlan)
-        }
-      } catch (err) {
-        console.error('Failed to load plans:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadPlans()
   }, [])
 
@@ -47,8 +48,35 @@ export function PlannerPage() {
     )
   }
 
+  if (showGenerator) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Create New Plan</h1>
+          <Button variant="ghost" onClick={() => setShowGenerator(false)}>
+            ← Back to Plans
+          </Button>
+        </div>
+        <PlanGenerator onCreated={() => {
+          setShowGenerator(false)
+          loadPlans()
+        }} />
+      </div>
+    )
+  }
+
   if (activePlan) {
-    return <PlanView />
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Study Planner</h1>
+          <Button onClick={() => setShowGenerator(true)}>
+            + New Plan
+          </Button>
+        </div>
+        <PlanView />
+      </div>
+    )
   }
 
   return (

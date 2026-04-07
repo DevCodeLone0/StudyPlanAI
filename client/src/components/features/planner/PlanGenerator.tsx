@@ -7,7 +7,7 @@ import type { Plan } from '@/types'
 
 type GeneratorStep = 'form' | 'loading' | 'preview'
 
-export function PlanGenerator() {
+export function PlanGenerator({ onCreated }: { onCreated?: () => void } = {}) {
   const navigate = useNavigate()
   const { setActivePlan, addPlan } = usePlanStore()
 
@@ -53,7 +53,11 @@ export function PlanGenerator() {
       const activated = await planService.activatePlan(generatedPlan.id)
       setActivePlan(activated)
       addPlan(activated)
-      navigate('/app/planner')
+      if (onCreated) {
+        onCreated()
+      } else {
+        navigate('/app/planner')
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to activate plan'
       setError(message)

@@ -166,7 +166,7 @@ function ModuleCardContent({
   }
 
   const statusBadge = {
-    LOCKED: <Badge variant="default">Locked</Badge>,
+    LOCKED: <Badge variant="default">Not Started</Badge>,
     IN_PROGRESS: <Badge variant="primary">In Progress</Badge>,
     COMPLETED: <Badge variant="success">Completed</Badge>,
   }
