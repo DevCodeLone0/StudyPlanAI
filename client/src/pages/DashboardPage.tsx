@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent, ProgressBar, LevelBadge, Badg
 import { useAuthStore } from '@/stores/authStore'
 import { getLevelProgress } from '@/stores/gamificationStore'
 import { StreakDisplay, ActivityCalendar, CelebrationModal } from '@/components/gamification'
+import { AchievementsWidget } from '@/components/achievements/AchievementsWidget'
 import { useState } from 'react'
 
 export function DashboardPage() {
@@ -143,21 +144,24 @@ showHistory
         </Card>
       </div>
       
-{/* Activity Calendar */}
-<Card>
-<CardHeader>
-<CardTitle>📅 Study Activity</CardTitle>
-</CardHeader>
-<CardContent>
-{loading ? (
-<div className="h-32 flex items-center justify-center">
-<div className="animate-pulse text-gray-400">Loading...</div>
-</div>
-) : (
-<ActivityCalendar days={30} />
-)}
-</CardContent>
-</Card>
+      {/* Activity Calendar */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📅 Study Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-32 flex items-center justify-center">
+              <div className="animate-pulse text-gray-400">Loading...</div>
+            </div>
+          ) : (
+            <ActivityCalendar days={30} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Achievements */}
+      <AchievementsWidget className="mt-6" />
 
 {/* Celebration Modal */}
 {celebration && (

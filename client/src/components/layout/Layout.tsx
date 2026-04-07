@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { useAuthStore } from '@/stores/authStore'
 import { LevelBadge } from '@/components/ui'
+import { CelebrationProvider } from '@/components/gamification'
 
 const navItems = [
   { path: '/app/dashboard', label: 'Dashboard', icon: '🏠' },
@@ -83,6 +84,9 @@ export function Layout({ requireAdmin = false }: { requireAdmin?: boolean }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
+
+      {/* Global Celebration Modal */}
+      <CelebrationProvider />
     </div>
   )
 }

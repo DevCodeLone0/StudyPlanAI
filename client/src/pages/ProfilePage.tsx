@@ -1,21 +1,50 @@
+import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent, LevelBadge, Badge, ProgressBar } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { getLevelProgress } from '@/stores/gamificationStore'
+import { BadgesCollection, RewardsShop } from '@/components/gamification'
+import { gamificationService, type BadgeWithStatus, type Reward, type UserReward } from '@/services/gamificationService'
 
 export function ProfilePage() {
-const { user } = useAuthStore()
+  const { user } = useAuthStore()
+  const [badges, setBadges] = useState<BadgeWithStatus[]>([])
+  const [purchasedRewards, setPurchasedRewards] = useState<UserReward[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-if (!user) return null
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        const [badgesData, purchasedData] = await Promise.all([
+          gamificationService.getBadges(),
+          gamificationService.getPurchasedRewards(),
+        ])
+        setBadges(badgesData)
+        setPurchasedRewards(purchasedData)
+      } catch (err) {
+        console.error('Failed to fetch profile data:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-const progress = getLevelProgress(user.xp, user.level)
+    fetchData()
+  }, [])
 
-const badges = [
-{ code: 'FIRST_STEPS', name: 'First Steps', icon: '👣', earned: true },
-{ code: 'WEEK_WARRIOR', name: 'Week Warrior', icon: '7️⃣', earned: user.currentStreak >= 7 },
-{ code: 'FAST_LEARNER', name: 'Fast Learner', icon: '⚡', earned: false },
-{ code: 'DEDICATED', name: 'Dedicated', icon: '📚', earned: false },
-{ code: 'MASTER', name: 'Study Master', icon: '👑', earned: false },
-]
+  const handlePurchaseReward = async (reward: Reward) => {
+    if (!user) return
+    try {
+      const purchased = await gamificationService.purchaseReward(reward.id)
+      setPurchasedRewards((prev) => [...prev, purchased])
+    } catch (err) {
+      console.error('Failed to purchase reward:', err)
+    }
+  }
+
+  if (!user) return null
+
+  const progress = getLevelProgress(user.xp, user.level)
+  const purchasedIds = purchasedRewards.map((pr) => pr.reward.id)
 
 return (
 <div className="max-w-3xl mx-auto space-y-6">
@@ -72,29 +101,16 @@ return (
 </CardContent>
 </Card>
 
-{/* Badges */}
-<Card>
-<CardHeader>
-<CardTitle>🏆 Badges</CardTitle>
-</CardHeader>
-<CardContent>
-<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-{badges.map((badge) => (
-<div
-key={badge.code}
-className={`text-center p-4 rounded-lg ${
-badge.earned
-? 'bg-primary-50 border-2 border-primary-200'
-: 'bg-gray-50 opacity-50'
-}`}
->
-<span className="text-4xl block mb-2">{badge.icon}</span>
-<p className="text-sm font-medium">{badge.name}</p>
-</div>
-))}
-</div>
-</CardContent>
-</Card>
-</div>
-)
+  {/* Badges Collection */}
+  <BadgesCollection badges={badges} isLoading={isLoading} className="mt-6" />
+
+  {/* Rewards Shop */}
+  <RewardsShop
+    userXP={user.xp}
+    purchasedRewardIds={purchasedIds}
+    onPurchase={handlePurchaseReward}
+    className="mt-6"
+  />
+  </div>
+  )
 }
