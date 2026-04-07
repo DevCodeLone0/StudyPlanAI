@@ -5,7 +5,7 @@ import { ContextBanner } from '@/components/tutor/ContextBanner'
 import { useTranslation } from '@/hooks/useTranslation'
 
 export function TutorPage() {
-  const { t } = useTranslation()
+  useTranslation()
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',

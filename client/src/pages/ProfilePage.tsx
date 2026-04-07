@@ -11,7 +11,7 @@ export function ProfilePage() {
   const [badges, setBadges] = useState<BadgeWithStatus[]>([])
   const [purchasedRewards, setPurchasedRewards] = useState<UserReward[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const { t } = useTranslation()
+  useTranslation()
 
   useEffect(() => {
     const fetchData = async () => {

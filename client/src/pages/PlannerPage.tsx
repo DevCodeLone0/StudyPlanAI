@@ -9,7 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 export function PlannerPage() {
   const { activePlan, setActivePlan, setPlans, setLoading, isLoading } = usePlanStore()
   const [showGenerator, setShowGenerator] = useState(false)
-  const { t } = useTranslation()
+  useTranslation()
 
   const loadPlans = async () => {
     setLoading(true)
