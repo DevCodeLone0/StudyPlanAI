@@ -9,8 +9,9 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showWakingUp, setShowWakingUp] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
-  
+
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   
@@ -33,11 +34,12 @@ export function LoginPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validate()) return
-    
+
     setIsLoading(true)
-    
+    const wakingUpTimer = setTimeout(() => setShowWakingUp(true), 3000)
+
     try {
       const response = await authService.login({ email, password })
       setAuth(response.user, response.accessToken)
@@ -46,6 +48,8 @@ export function LoginPage() {
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Login failed')
     } finally {
+      clearTimeout(wakingUpTimer)
+      setShowWakingUp(false)
       setIsLoading(false)
     }
   }
@@ -77,9 +81,14 @@ export function LoginPage() {
             error={errors.password}
           />
           
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Sign In
-          </Button>
+      <Button type="submit" className="w-full" isLoading={isLoading}>
+        {showWakingUp ? 'Waking up server...' : 'Sign In'}
+      </Button>
+      {showWakingUp && (
+        <p className="text-center text-sm text-gray-500 mt-2">
+          First request takes a moment on free tier...
+        </p>
+      )}
         </form>
         
         <p className="text-center text-gray-600 mt-6">

@@ -11,8 +11,9 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showWakingUp, setShowWakingUp] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  
+
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   
@@ -45,11 +46,12 @@ export function RegisterPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validate()) return
-    
+
     setIsLoading(true)
-    
+    const wakingUpTimer = setTimeout(() => setShowWakingUp(true), 3000)
+
     try {
       const response = await authService.register({ name, email, password })
       setAuth(response.user, response.accessToken)
@@ -58,6 +60,8 @@ export function RegisterPage() {
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Registration failed')
     } finally {
+      clearTimeout(wakingUpTimer)
+      setShowWakingUp(false)
       setIsLoading(false)
     }
   }
@@ -108,9 +112,14 @@ export function RegisterPage() {
             error={errors.confirmPassword}
           />
           
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Create Account
-          </Button>
+      <Button type="submit" className="w-full" isLoading={isLoading}>
+        {showWakingUp ? 'Waking up server...' : 'Create Account'}
+      </Button>
+      {showWakingUp && (
+        <p className="text-center text-sm text-gray-500 mt-2">
+          First request takes a moment on free tier...
+        </p>
+      )}
         </form>
         
         <p className="text-center text-gray-600 mt-6">
