@@ -39,7 +39,7 @@ Rules:
 async function callNvidiaAI(messages: Array<{ role: string; content: string }>, maxTokens: number = 500): Promise<string> {
   const apiUrl = process.env.NVIDIA_API_URL || 'https://integrate.api.nvidia.com/v1/chat/completions'
   const apiKey = process.env.NVIDIA_API_KEY
-  const model = process.env.NVIDIA_MODEL || 'nvidia/z-ai/glm5'
+  const model = process.env.NVIDIA_MODEL || 'z-ai/glm5'
 
   if (!apiKey) {
     throw new Error('NVIDIA_API_KEY not configured')
