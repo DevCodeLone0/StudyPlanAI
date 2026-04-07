@@ -22,22 +22,22 @@ interface CelebrationModalProps {
 
 const CELEBRATION_CONFIG = {
   level_up: {
-    title: 'LEVEL UP!',
+    title: '¡NIVEL ALCANZADO!',
     icon: '⬆️',
     color: 'from-indigo-500 to-purple-600',
   },
   badge_earned: {
-    title: 'BADGE EARNED!',
+    title: '¡INsignia OBTENIDA!',
     icon: '🏅',
     color: 'from-yellow-400 to-orange-500',
   },
   streak_milestone: {
-    title: 'STREAK MILESTONE!',
+    title: '¡HITO DE RACHA!',
     icon: '🔥',
     color: 'from-orange-500 to-red-600',
   },
   module_complete: {
-    title: 'MODULE COMPLETE!',
+    title: '¡MÓDULO COMPLETADO!',
     icon: '✅',
     color: 'from-green-500 to-teal-600',
   },
@@ -93,22 +93,22 @@ export function CelebrationModal({
         .catch(console.error)
     } else {
       navigator.clipboard.writeText(shareText)
-      alert('Copied to clipboard!')
+      alert('¡Copiado al portapapeles!')
     }
   }
 
   const getShareText = () => {
     switch (type) {
       case 'level_up':
-        return `🎉 I just reached level ${data.level} on StudyPlanAI! Keep learning and growing! #StudyPlanAI #LevelUp`
+        return `🎉 ¡Acabo de alcanzar el nivel ${data.level} en StudyPlanAI! ¡Sigue aprendiendo y creciendo! #StudyPlanAI #NivelAlcanzado`
       case 'badge_earned':
-        return `🏅 I just earned the "${data.badge?.name}" badge on StudyPlanAI! #StudyPlanAI #BadgeEarned`
+        return `🏅 ¡Acabo de obtener la insignia "${data.badge?.name}" en StudyPlanAI! #StudyPlanAI #InsigniaObtenida`
       case 'streak_milestone':
-        return `🔥 I've maintained a ${data.streak}-day streak on StudyPlanAI! Consistency is key! #StudyPlanAI #Streak`
+        return `🔥 ¡He mantenido una racha de ${data.streak} días en StudyPlanAI! La constancia es clave. #StudyPlanAI #Racha`
       case 'module_complete':
-        return `✅ I just completed the "${data.moduleName}" module on StudyPlanAI! #StudyPlanAI #Learning`
+        return `✅ ¡Acabo de completar el módulo "${data.moduleName}" en StudyPlanAI! #StudyPlanAI #Aprendizaje`
       default:
-        return 'Check out my progress on StudyPlanAI!'
+        return '¡Mira mi progreso en StudyPlanAI!'
     }
   }
 
@@ -129,9 +129,9 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-      <Badge variant="success" size="md">
-        +{data.xpEarned} XP earned
-      </Badge>
+                <Badge variant="success" size="md">
+                  +{data.xpEarned} XP ganada
+                </Badge>
               </div>
             )}
           </div>
@@ -156,9 +156,9 @@ export function CelebrationModal({
             </div>
             {data.xpEarned && (
               <div className="text-center">
-      <Badge variant="success" size="md">
-        +{data.xpEarned} XP earned
-      </Badge>
+                <Badge variant="success" size="md">
+                  +{data.xpEarned} XP ganada
+                </Badge>
               </div>
             )}
           </div>
@@ -179,13 +179,13 @@ export function CelebrationModal({
             </div>
             <div className="text-center">
               <p className="text-lg font-semibold text-gray-900">
-                {data.streak} {data.streak === 1 ? 'day' : 'days'} streak!
+                ¡{data.streak} {data.streak === 1 ? 'día' : 'días'} de racha!
               </p>
             </div>
             {data.xpEarned && (
               <div className="text-center">
                 <Badge variant="success" size="md">
-                  +{data.xpEarned} XP earned
+                  +{data.xpEarned} XP ganada
                 </Badge>
               </div>
             )}
@@ -207,12 +207,12 @@ export function CelebrationModal({
             </div>
             <div className="text-center">
               <h3 className="text-xl font-bold text-gray-900">{data.moduleName}</h3>
-              <p className="text-sm text-gray-500 mt-1">Module completed successfully!</p>
+              <p className="text-sm text-gray-500 mt-1">¡Módulo completado con éxito!</p>
             </div>
             {data.xpEarned && (
               <div className="text-center">
                 <Badge variant="success" size="md">
-                  +{data.xpEarned} XP earned
+                  +{data.xpEarned} XP ganada
                 </Badge>
               </div>
             )}
@@ -252,10 +252,10 @@ export function CelebrationModal({
 
           <div className="flex gap-3">
             <Button onClick={handleShare} variant="secondary" className="flex-1">
-              Share
+              Compartir
             </Button>
             <Button onClick={handleClose} variant="primary" className="flex-1">
-              Continue
+              Continuar
             </Button>
           </div>
         </CardContent>

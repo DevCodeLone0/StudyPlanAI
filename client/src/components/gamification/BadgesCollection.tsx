@@ -18,7 +18,7 @@ export function BadgesCollection({
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle>🏆 Badges</CardTitle>
+          <CardTitle>🏆 Insignias</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -43,7 +43,7 @@ export function BadgesCollection({
     <Card className={className}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>🏆 Badges</CardTitle>
+          <CardTitle>🏆 Insignias</CardTitle>
           <Badge variant="primary" size="md">
             {earnedCount} / {badges.length}
           </Badge>
@@ -65,7 +65,7 @@ export function BadgesCollection({
               <p className="text-sm font-medium text-gray-900">{badge.name}</p>
               {badge.earned && badge.earnedAt && (
                 <p className="text-xs text-gray-500 mt-1">
-                  {new Date(badge.earnedAt).toLocaleDateString()}
+                  {new Date(badge.earnedAt).toLocaleDateString('es-ES')}
                 </p>
               )}
             </div>

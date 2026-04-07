@@ -27,11 +27,11 @@ const generateSampleData = (days: number): ActivityCalendarData[] => {
       count,
       types: count > 0
         ? [
-            { type: 'MILESTONE_COMPLETED', count: Math.floor(count * 0.4) },
-            { type: 'PLAN_CREATED', count: Math.floor(count * 0.3) },
-            { type: 'PLAN_COMPLETED', count: Math.floor(count * 0.2) },
-            { type: 'STREAK_MAINTENED', count: Math.floor(count * 0.1) },
-          ].filter((t) => t.count > 0)
+          { type: 'MILESTONE_COMPLETED', count: Math.floor(count * 0.4) },
+          { type: 'PLAN_CREATED', count: Math.floor(count * 0.3) },
+          { type: 'PLAN_COMPLETED', count: Math.floor(count * 0.2) },
+          { type: 'STREAK_MAINTENED', count: Math.floor(count * 0.1) },
+        ].filter((t) => t.count > 0)
         : [],
     })
   }
@@ -55,7 +55,7 @@ export function ActivityCalendar({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
   }
 
   const handleMouseEnter = (e: React.MouseEvent, dayData: ActivityCalendarData) => {
@@ -80,8 +80,8 @@ export function ActivityCalendar({
     <Card className={className}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Activity Calendar</CardTitle>
-          <span className="text-sm text-gray-500">Last {days} Days</span>
+          <CardTitle>Calendario de Actividad</CardTitle>
+          <span className="text-sm text-gray-500">Últimos {days} días</span>
         </div>
         <div className="text-sm text-gray-500">
           {formatDate(startDate)} - {formatDate(endDate)}
@@ -114,7 +114,7 @@ export function ActivityCalendar({
                     onMouseEnter={(e) => handleMouseEnter(e, dayData)}
                     onMouseLeave={handleMouseLeave}
                     onClick={() => handleClick(dayData)}
-                    title={`${formatDate(dayData.date)}: ${dayData.count} activities`}
+                    title={`${formatDate(dayData.date)}: ${dayData.count} actividades`}
                   />
                 )
               })}
@@ -123,19 +123,19 @@ export function ActivityCalendar({
         </div>
 
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-          <span className="text-sm text-gray-500">Less</span>
+          <span className="text-sm text-gray-500">Menos</span>
           <div className="flex gap-1">
             {['bg-gray-100', 'bg-green-200', 'bg-green-400', 'bg-green-600', 'bg-green-800'].map(
               (color, index) => (
                 <div
                   key={index}
                   className={clsx('w-4 h-4 rounded', color)}
-                  title={`${index} activities`}
+                  title={`${index} actividades`}
                 />
               )
             )}
           </div>
-          <span className="text-sm text-gray-500">More</span>
+          <span className="text-sm text-gray-500">Más</span>
         </div>
       </CardContent>
 
@@ -148,7 +148,7 @@ export function ActivityCalendar({
           }}
         >
           <div className="font-semibold mb-1">{formatDate(hoveredDate.date)}</div>
-          <div className="text-gray-300">{hoveredDate.count} activities</div>
+          <div className="text-gray-300">{hoveredDate.count} actividades</div>
           {hoveredDate.types.length > 0 && (
             <div className="mt-2 space-y-1">
               {hoveredDate.types.map((type, index) => (
