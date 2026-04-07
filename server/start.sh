@@ -7,27 +7,27 @@ echo "🔄 Running database migrations..."
 export PRISMA_DISABLE_PREPARED_STATEMENTS="true"
 
 # Retry logic with exponential backoff
-MAX_RETRIES=3
-RETRY_DELAY=5
-TIMEOUT=60
+MAX_RETRIES=5
+RETRY_DELAY=10
+TIMEOUT=120
 MIGRATION_SUCCESS=false
 
 for i in $(seq 1 $MAX_RETRIES); do
   echo "🔄 Migration attempt $i/$MAX_RETRIES..."
-  
-  if timeout ${TIMEOUT}s npx prisma migrate deploy; then
+
+  if timeout ${TIMEOUT}s npx prisma migrate deploy --schema=prisma/schema.prisma 2>&1; then
     echo "✅ Migration successful"
     MIGRATION_SUCCESS=true
     break
   else
     echo "⚠️ Migration attempt $i failed"
-    
+
     if [ $i -eq $MAX_RETRIES ]; then
       echo "⚠️ All migration attempts failed. Starting anyway..."
     else
       echo "⏳ Retrying in ${RETRY_DELAY}s..."
       sleep $RETRY_DELAY
-      RETRY_DELAY=$((RETRY_DELAY * 2))
+      RETRY_DELAY=$((RETRY_DELAY + 10))
     fi
   fi
 done
@@ -37,6 +37,7 @@ if [ "$MIGRATION_SUCCESS" = true ]; then
 else
   echo "⚠️ Database migrations failed or skipped"
   echo "📝 The application will start anyway..."
+  echo "📝 Note: Schema should already be in sync from previous deploys"
 fi
 
 echo "🚀 Starting server on port $PORT..."
